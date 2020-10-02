@@ -19,6 +19,9 @@
 #ifndef NANOVG_H
 #define NANOVG_H
 
+#define BLUELAB_COLORMAP 1
+#define BLUELAB_RENDER_QUAD 1
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -142,6 +145,9 @@ enum NVGimageFlags {
 	NVG_IMAGE_FLIPY				= 1<<3,		// Flips (inverses) image in Y direction when rendered.
 	NVG_IMAGE_PREMULTIPLIED		= 1<<4,		// Image data has premultiplied alpha.
 	NVG_IMAGE_NEAREST			= 1<<5,		// Image interpolation is Nearest instead Linear
+#if BLUELAB_COLORMAP
+    NVG_IMAGE_ONE_FLOAT_FORMAT  = 1<<6
+#endif
 };
 
 // Begin drawing a new frame
@@ -664,7 +670,13 @@ struct NVGparams {
 	void (*renderViewport)(void* uptr, float width, float height, float devicePixelRatio);
 	void (*renderCancel)(void* uptr);
 	void (*renderFlush)(void* uptr);
+    
+#if !BLUELAB_COLORMAP
 	void (*renderFill)(void* uptr, NVGpaint* paint, NVGcompositeOperationState compositeOperation, NVGscissor* scissor, float fringe, const float* bounds, const NVGpath* paths, int npaths);
+#else
+    void (*renderFill)(void* uptr, NVGpaint* paint, NVGcompositeOperationState compositeOperation, NVGscissor* scissor, float fringe, const float* bounds, const NVGpath* paths, int npaths, int colormapId);
+#endif
+    
 	void (*renderStroke)(void* uptr, NVGpaint* paint, NVGcompositeOperationState compositeOperation, NVGscissor* scissor, float fringe, float strokeWidth, const NVGpath* paths, int npaths);
 	void (*renderTriangles)(void* uptr, NVGpaint* paint, NVGcompositeOperationState compositeOperation, NVGscissor* scissor, const NVGvertex* verts, int nverts, float fringe);
 	void (*renderDelete)(void* uptr);
@@ -679,6 +691,19 @@ NVGparams* nvgInternalParams(NVGcontext* ctx);
 
 // Debug function to dump cached path data.
 void nvgDebugDumpPathCache(NVGcontext* ctx);
+
+#if BLUELAB_COLORMAP
+// Set colormap
+void nvgSetColormap(NVGcontext* ctx, int colormapId);
+#endif
+    
+#if BLUELAB_RENDER_QUAD
+  // Render a textured quad
+  void nvgQuad(NVGcontext* ctx, float corners[4][2], int image);
+  
+  // Renders several quads at the same time (optimized)
+  void nvgQuads(NVGcontext* ctx, float *centers, int nQuads, float size, int image);
+#endif
 
 #ifdef _MSC_VER
 #pragma warning(pop)

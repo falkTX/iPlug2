@@ -83,6 +83,9 @@ struct NVGstate {
 	float fontBlur;
 	int textAlign;
 	int fontId;
+#if BLUELAB_COLORMAP
+  int colormapId;
+#endif
 };
 typedef struct NVGstate NVGstate;
 
@@ -314,7 +317,13 @@ NVGcontext* nvgCreateInternal(NVGparams* params)
 	memset(&fontParams, 0, sizeof(fontParams));
 	fontParams.width = NVG_INIT_FONTIMAGE_SIZE;
 	fontParams.height = NVG_INIT_FONTIMAGE_SIZE;
+
+#if BLUELAB_CHANGES
+	fontParams.flags = FONS_ZERO_BOTTOMLEFT;
+#else
 	fontParams.flags = FONS_ZERO_TOPLEFT;
+#endif
+	
 	fontParams.renderCreate = NULL;
 	fontParams.renderUpdate = NULL;
 	fontParams.renderDraw = NULL;
@@ -663,6 +672,10 @@ void nvgReset(NVGcontext* ctx)
 	state->fontBlur = 0.0f;
 	state->textAlign = NVG_ALIGN_LEFT | NVG_ALIGN_BASELINE;
 	state->fontId = 0;
+
+#if BLUELAB_COLORMAP
+	state->colormapId = 0;
+#endif
 }
 
 // State setting
@@ -2233,8 +2246,16 @@ void nvgFill(NVGcontext* ctx)
 	fillPaint.innerColor.a *= state->alpha;
 	fillPaint.outerColor.a *= state->alpha;
 
+	//ctx->params.renderFill(ctx->params.userPtr, &fillPaint, state->compositeOperation, &state->scissor, ctx->fringeWidth, ctx->cache->bounds, ctx->cache->paths, ctx->cache->npaths);
+#if !BLUELAB_COLORMAP
 	ctx->params.renderFill(ctx->params.userPtr, &fillPaint, state->compositeOperation, &state->scissor, ctx->fringeWidth,
-						   ctx->cache->bounds, ctx->cache->paths, ctx->cache->npaths);
+			       ctx->cache->bounds, ctx->cache->paths, ctx->cache->npaths);
+#else
+	int colormapId = state->colormapId;
+	ctx->params.renderFill(ctx->params.userPtr, &fillPaint, state->compositeOperation, &state->scissor, ctx->fringeWidth,
+			       ctx->cache->bounds, ctx->cache->paths, ctx->cache->npaths,
+			       colormapId);
+#endif
 
 	// Count triangles
 	for (i = 0; i < ctx->cache->npaths; i++) {
@@ -2489,12 +2510,38 @@ float nvgText(NVGcontext* ctx, float x, float y, const char* string, const char*
 		nvgTransformPoint(&c[6],&c[7], state->xform, q.x0*invscale, q.y1*invscale);
 		// Create triangles
 		if (nverts+6 <= cverts) {
-			nvg__vset(&verts[nverts], c[0], c[1], q.s0, q.t0); nverts++;
-			nvg__vset(&verts[nverts], c[4], c[5], q.s1, q.t1); nverts++;
-			nvg__vset(&verts[nverts], c[2], c[3], q.s1, q.t0); nverts++;
-			nvg__vset(&verts[nverts], c[0], c[1], q.s0, q.t0); nverts++;
-			nvg__vset(&verts[nverts], c[6], c[7], q.s0, q.t1); nverts++;
-			nvg__vset(&verts[nverts], c[4], c[5], q.s1, q.t1); nverts++;
+#if BLUELAB_CHANGES
+		  if (ctx->fs->params.flags == FONS_ZERO_TOPLEFT)
+		    {
+		      nvg__vset(&verts[nverts], c[0], c[1], q.s0, q.t0); nverts++;
+		      nvg__vset(&verts[nverts], c[4], c[5], q.s1, q.t1); nverts++;
+		      nvg__vset(&verts[nverts], c[2], c[3], q.s1, q.t0); nverts++;
+		      nvg__vset(&verts[nverts], c[0], c[1], q.s0, q.t0); nverts++;
+		      nvg__vset(&verts[nverts], c[6], c[7], q.s0, q.t1); nverts++;
+		      nvg__vset(&verts[nverts], c[4], c[5], q.s1, q.t1); nverts++;
+		    }
+		  else
+		    //FONS_ZERO_BOTTOMLEFT
+		    {
+		      // Niko
+		      
+		      // Reverse windind
+		      nvg__vset(&verts[nverts], c[0], c[1], q.s0, q.t0); nverts++;
+		      nvg__vset(&verts[nverts], c[2], c[3], q.s1, q.t0); nverts++;
+		      nvg__vset(&verts[nverts], c[4], c[5], q.s1, q.t1); nverts++;
+		      
+		      nvg__vset(&verts[nverts], c[0], c[1], q.s0, q.t0); nverts++;
+		      nvg__vset(&verts[nverts], c[4], c[5], q.s1, q.t1); nverts++;
+		      nvg__vset(&verts[nverts], c[6], c[7], q.s0, q.t1); nverts++;
+		    }
+#else // Original
+		  nvg__vset(&verts[nverts], c[0], c[1], q.s0, q.t0); nverts++;
+		  nvg__vset(&verts[nverts], c[4], c[5], q.s1, q.t1); nverts++;
+		  nvg__vset(&verts[nverts], c[2], c[3], q.s1, q.t0); nverts++;
+		  nvg__vset(&verts[nverts], c[0], c[1], q.s0, q.t0); nverts++;
+		  nvg__vset(&verts[nverts], c[6], c[7], q.s0, q.t1); nverts++;
+		  nvg__vset(&verts[nverts], c[4], c[5], q.s1, q.t1); nverts++;
+#endif
 		}
 	}
 
@@ -2914,3 +2961,150 @@ void nvgTextMetrics(NVGcontext* ctx, float* ascender, float* descender, float* l
 		*lineh *= invscale;
 }
 // vim: ft=c nu noet ts=4
+
+#if BLUELAB_COLORMAP
+void nvgSetColormap(NVGcontext* ctx, int colormapId)
+{
+  NVGstate* state = nvg__getState(ctx);
+  
+  state->colormapId = colormapId;
+}
+#endif
+
+#if BLUELAB_RENDER_QUAD
+// Same as nvg__renderText (almost...)
+static void nvg__renderQuad(NVGcontext* ctx, NVGvertex* verts, int nverts, int image)
+{
+  NVGstate* state = nvg__getState(ctx);
+  NVGpaint paint = state->fill;
+  
+  // Render triangles.
+  if (image >= 0)
+    paint.image = image;
+  
+  // Apply global alpha
+  paint.innerColor.a *= state->alpha;
+  paint.outerColor.a *= state->alpha;
+  
+  ctx->params.renderTriangles(ctx->params.userPtr, &paint, state->compositeOperation, &state->scissor, verts, nverts, ctx->fringeWidth);
+  
+  ctx->drawCallCount++;
+  ctx->textTriCount += nverts/3;
+}
+
+void
+nvgQuad(NVGcontext* ctx, float corners[4][2], int image)
+{
+  NVGstate* state = nvg__getState(ctx);
+  
+  NVGvertex* verts;
+  int cverts = 6;
+  
+  verts = nvg__allocTempVerts(ctx, cverts);
+  if (verts == NULL) return;
+  
+  float c[4*2] = { corners[0][0], corners[0][1],
+		   corners[1][0], corners[1][1],
+		   corners[2][0], corners[2][1],
+		   corners[3][0], corners[3][1], };
+  
+  float t[4*2] = { 0.0, 0.0,
+		   1.0, 0.0,
+		   1.0, 1.0,
+		   0.0, 1.0 };
+  
+  // Transform corners.
+  nvgTransformPoint(&c[0],&c[1], state->xform, c[0], c[1]);
+  nvgTransformPoint(&c[2],&c[3], state->xform, c[2], c[3]);
+  nvgTransformPoint(&c[4],&c[5], state->xform, c[4], c[5]);
+  nvgTransformPoint(&c[6],&c[7], state->xform, c[6], c[7]);
+  
+  int nverts = 0;
+  
+  // Create triangles
+#if 1
+  nvg__vset(&verts[nverts], c[0], c[1], t[0], t[1]); nverts++;
+  nvg__vset(&verts[nverts], c[4], c[5], t[4], t[5]); nverts++;
+  nvg__vset(&verts[nverts], c[2], c[3], t[2], t[3]); nverts++;
+  nvg__vset(&verts[nverts], c[0], c[1], t[0], t[1]); nverts++;
+  nvg__vset(&verts[nverts], c[6], c[7], t[6], t[7]); nverts++;
+  nvg__vset(&verts[nverts], c[4], c[5], t[4], t[5]); nverts++;
+#endif
+    
+  nvg__renderQuad(ctx, verts, nverts, image);
+}
+
+// Render several quads at the same time
+void
+nvgQuads(NVGcontext* ctx, float *centers, int nQuads, float size, int image)
+{
+  NVGstate* state = nvg__getState(ctx);
+  NVGpaint paint = state->fill;
+  
+  // Render triangles.
+  if (image >= 0)
+    paint.image = image;
+  
+  // Apply global alpha
+  paint.innerColor.a *= state->alpha;
+  paint.outerColor.a *= state->alpha;
+  
+  //
+  
+  //int nverts = nQuads*8;
+  int nverts = nQuads*6;
+  
+  NVGvertex* verts;
+  verts = nvg__allocTempVerts(ctx, nverts);
+  if (verts == NULL) return;
+  
+  //
+  float p[2];
+  
+  float t[8] = { 0.0, 0.0,
+		 1.0, 0.0,
+		 1.0, 1.0,
+		 0.0, 1.0 };
+  
+  float halfSize = size*0.5;
+  
+  float corners[4][2];
+  int n = 0;
+  //for (int i = 0; i < nQuads*2; i += 2)
+  for (int i = 0; i < nQuads; i++)
+    {
+      p[0] = centers[i*2];
+      p[1] = centers[i*2 + 1];
+      
+      nvgTransformPoint(&p[0],&p[1], state->xform, p[0], p[1]);
+      
+      //
+      corners[0][0] = p[0] - halfSize;
+      corners[0][1] = p[1] - halfSize;
+      
+      corners[1][0] = p[0] + halfSize;
+      corners[1][1] = p[1] - halfSize;
+      
+      corners[2][0] = p[0] + halfSize;
+      corners[2][1] = p[1] + halfSize;
+      
+      corners[3][0] = p[0] - halfSize;
+      corners[3][1] = p[1] + halfSize;
+      
+      //
+      nvg__vset(&verts[n++], corners[0][0], corners[0][1], t[0], t[1]);
+      nvg__vset(&verts[n++], corners[2][0], corners[2][1], t[4], t[5]);
+      nvg__vset(&verts[n++], corners[1][0], corners[1][1], t[2], t[3]);
+      
+      nvg__vset(&verts[n++], corners[0][0], corners[0][1], t[0], t[1]);
+      nvg__vset(&verts[n++], corners[3][0], corners[3][1], t[6], t[7]);
+      nvg__vset(&verts[n++], corners[2][0], corners[2][1], t[4], t[5]);
+    }
+  
+  //
+  ctx->params.renderTriangles(ctx->params.userPtr, &paint, state->compositeOperation, &state->scissor, verts, nverts, ctx->fringeWidth);
+  
+  ctx->drawCallCount++;
+  ctx->textTriCount += nQuads*2;
+}
+#endif

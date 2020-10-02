@@ -18,6 +18,9 @@
 #ifndef NANOVG_GL_H
 #define NANOVG_GL_H
 
+#define BLUELAB_COLORMAP 1
+#define BLUELAB_CHANGES 1
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -32,6 +35,10 @@ enum NVGcreateFlags {
 	NVG_STENCIL_STROKES	= 1<<1,
 	// Flag indicating that additional debug checks are done.
 	NVG_DEBUG 			= 1<<2,
+
+#if BLUELAB_CHANGES
+	NVG_ANTIALIAS_SKIP_FRINGES = 1<<3
+#endif
 };
 
 #if defined NANOVG_GL2_IMPLEMENTATION
@@ -117,6 +124,11 @@ enum GLNVGuniformLoc {
 	GLNVG_LOC_VIEWSIZE,
 	GLNVG_LOC_TEX,
 	GLNVG_LOC_FRAG,
+
+#if BLUELAB_COLORMAP
+	GLNVG_LOC_COLORMAP_TEX,
+	GLNVG_LOC_USE_COLORMAP,
+#endif
 	GLNVG_MAX_LOCS
 };
 
@@ -176,6 +188,10 @@ struct GLNVGcall {
 	int triangleCount;
 	int uniformOffset;
 	GLNVGblend blendFunc;
+
+#if BLUELAB_COLORMAP
+  int colormapId;
+#endif
 };
 typedef struct GLNVGcall GLNVGcall;
 
@@ -495,6 +511,11 @@ static void glnvg__getUniforms(GLNVGshader* shader)
 	shader->loc[GLNVG_LOC_VIEWSIZE] = glGetUniformLocation(shader->prog, "viewSize");
 	shader->loc[GLNVG_LOC_TEX] = glGetUniformLocation(shader->prog, "tex");
 
+#if BLUELAB_COLORMAP
+	shader->loc[GLNVG_LOC_COLORMAP_TEX] = glGetUniformLocation(shader->prog, "colormapTex");
+	shader->loc[GLNVG_LOC_USE_COLORMAP] = glGetUniformLocation(shader->prog, "useColormap");
+#endif
+    
 #if NANOVG_GL_USE_UNIFORMBUFFER
 	shader->loc[GLNVG_LOC_FRAG] = glGetUniformBlockIndex(shader->prog, "frag");
 #else
@@ -581,12 +602,20 @@ static int glnvg__renderCreate(void* uptr)
 		"	uniform vec4 frag[UNIFORMARRAY_SIZE];\n"
 		"#endif\n"
 		"	uniform sampler2D tex;\n"
-		"	in vec2 ftcoord;\n"
+#if BLUELAB_COLORMAP
+	  "	uniform sampler2D colormapTex;\n"
+	  "	uniform float useColormap;\n"
+#endif
+	  "	in vec2 ftcoord;\n"
 		"	in vec2 fpos;\n"
 		"	out vec4 outColor;\n"
 		"#else\n" // !NANOVG_GL3
 		"	uniform vec4 frag[UNIFORMARRAY_SIZE];\n"
 		"	uniform sampler2D tex;\n"
+#if BLUELAB_COLORMAP
+	  "	uniform sampler2D colormapTex;\n"
+	  "	uniform float useColormap;\n"
+#endif
 		"	varying vec2 ftcoord;\n"
 		"	varying vec2 fpos;\n"
 		"#endif\n"
@@ -670,8 +699,18 @@ static int glnvg__renderCreate(void* uptr)
 		"		color *= scissor;\n"
 		"		result = color * innerCol;\n"
 		"	}\n"
-		"#ifdef NANOVG_GL3\n"
-		"	outColor = result;\n"
+#if BLUELAB_COLORMAP
+	  "   if (useColormap > 0.5) {\n"
+	  "	vec2 ct = vec2(result.x, 0.0);\n"
+	  "#ifdef NANOVG_GL3\n"
+	  "	result = texture(colormapTex, ct);\n"
+	  "#else\n"
+	  "	result = texture2D(colormapTex, ct);\n"
+	  "#endif\n"
+	  "   }\n"
+#endif
+	  "#ifdef NANOVG_GL3\n"
+	  "	outColor = result;\n"
 		"#else\n"
 		"	gl_FragColor = result;\n"
 		"#endif\n"
@@ -745,7 +784,15 @@ static int glnvg__renderCreateTexture(void* uptr, int type, int w, int h, int im
 	tex->flags = imageFlags;
 	glnvg__bindTexture(gl, tex->tex);
 
+#if BLUELAB_COLORMAP
+	if ((imageFlags & NVG_IMAGE_ONE_FLOAT_FORMAT) == 0)
+	  glPixelStorei(GL_UNPACK_ALIGNMENT,1);
+	else
+	  glPixelStorei(GL_UNPACK_ALIGNMENT,4);
+#else
 	glPixelStorei(GL_UNPACK_ALIGNMENT,1);
+#endif
+      
 #ifndef NANOVG_GLES2
 	glPixelStorei(GL_UNPACK_ROW_LENGTH, tex->width);
 	glPixelStorei(GL_UNPACK_SKIP_PIXELS, 0);
@@ -754,7 +801,8 @@ static int glnvg__renderCreateTexture(void* uptr, int type, int w, int h, int im
 
 #if defined (NANOVG_GL2)
 	// GL 1.4 and later has support for generating mipmaps using a tex parameter.
-	if (imageFlags & NVG_IMAGE_GENERATE_MIPMAPS) {
+	// #bluelab
+	/* if (imageFlags & NVG_IMAGE_GENERATE_MIPMAPS) {
 		glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, GL_TRUE);
 	}
 #endif
@@ -769,7 +817,46 @@ static int glnvg__renderCreateTexture(void* uptr, int type, int w, int h, int im
 #else
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, w, h, 0, GL_RED, GL_UNSIGNED_BYTE, data);
 #endif
+	*/
 
+	// #bluelab: this part of code, copied from NikoLib, is maybe not exact
+	// (check the original commented code above)
+#if BLUELAB_COLORMAP
+	if ((imageFlags & NVG_IMAGE_ONE_FLOAT_FORMAT) == 0)
+	  {
+#endif //BLUELAB_COLORMAP
+	    if (type == NVG_TEXTURE_RGBA)
+	      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+	    else
+#if defined(NANOVG_GLES2)
+	      glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE, w, h, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, data);
+#elif defined(NANOVG_GLES3)
+	    glTexImage2D(GL_TEXTURE_2D, 0, GL_R8, w, h, 0, GL_RED, GL_UNSIGNED_BYTE, data);
+#else
+	    glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, w, h, 0, GL_RED, GL_UNSIGNED_BYTE, data);
+#endif // NANOVG_GLES2
+	    
+#if BLUELAB_COLORMAP
+	  } else
+	  {
+#ifndef WIN32 // Apple
+	    // As it should be: float format, 1 component
+	    glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, w, h, 0, GL_RED, GL_FLOAT, data);
+#else
+	    // On Windows, GL_R32F/GL_FLOAT seem unsupported
+	    // So pass the data as RGBA (it works)
+	    
+	    // With this line, we must make nvgUpdateImage() after each nvgCreateImage()
+	    //glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+	    
+	    // This line is better, no need to call nvgUpdateImage() after nvgCreateImage()
+	    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RED, GL_FLOAT, data);
+#endif // WIN32
+	  }
+#endif // BLUELAB_COLORMAP
+
+#endif // NANOVG_GL2 ?
+    
 	if (imageFlags & NVG_IMAGE_GENERATE_MIPMAPS) {
 		if (imageFlags & NVG_IMAGE_NEAREST) {
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);
@@ -800,19 +887,21 @@ static int glnvg__renderCreateTexture(void* uptr, int type, int w, int h, int im
 	else
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
+	//#if BLUELAB_COLORMAP...
 	glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
+            
 #ifndef NANOVG_GLES2
 	glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
 	glPixelStorei(GL_UNPACK_SKIP_PIXELS, 0);
 	glPixelStorei(GL_UNPACK_SKIP_ROWS, 0);
-#endif
+#endif // NANOVG_GLES2
 
 	// The new way to build mipmaps on GLES and GL3
 #if !defined(NANOVG_GL2)
 	if (imageFlags & NVG_IMAGE_GENERATE_MIPMAPS) {
 		glGenerateMipmap(GL_TEXTURE_2D);
 	}
-#endif
+#endif // NANOVG_GL2
 
 	glnvg__checkError(gl, "create tex");
 	glnvg__bindTexture(gl, 0);
@@ -1060,6 +1149,26 @@ static void glnvg__convexFill(GLNVGcontext* gl, GLNVGcall* call)
 	glnvg__setUniforms(gl, call->uniformOffset, call->image);
 	glnvg__checkError(gl, "convex fill");
 
+#if BLUELAB_COLORMAP
+    float useColormap = (float)(call->colormapId > 0);
+    if (useColormap)
+    {
+        glActiveTexture(GL_TEXTURE1);
+        
+        GLNVGtexture *tex = glnvg__findTexture(gl, call->colormapId);
+        
+        glBindTexture(GL_TEXTURE_2D, tex->tex);
+        
+        glActiveTexture(GL_TEXTURE0);
+    
+        glUniform1i(gl->shader.loc[GLNVG_LOC_COLORMAP_TEX], 1);
+        glUniform1f(gl->shader.loc[GLNVG_LOC_USE_COLORMAP], useColormap);
+
+        glUniform1i(gl->shader.loc[GLNVG_LOC_COLORMAP_TEX], 1);
+        glUniform1f(gl->shader.loc[GLNVG_LOC_USE_COLORMAP], useColormap);
+    }
+#endif
+
 	for (i = 0; i < npaths; i++) {
 		glDrawArrays(GL_TRIANGLE_FAN, paths[i].fillOffset, paths[i].fillCount);
 		// Draw fringes
@@ -1067,6 +1176,11 @@ static void glnvg__convexFill(GLNVGcontext* gl, GLNVGcall* call)
 			glDrawArrays(GL_TRIANGLE_STRIP, paths[i].strokeOffset, paths[i].strokeCount);
 		}
 	}
+
+#if BLUELAB_COLORMAP
+	//glUniform1i(gl->shader.loc[GLNVG_LOC_COLORMAP_TEX], 0);
+	glUniform1f(gl->shader.loc[GLNVG_LOC_USE_COLORMAP], 0.0);
+#endif
 }
 
 static void glnvg__stroke(GLNVGcontext* gl, GLNVGcall* call)
@@ -1353,8 +1467,14 @@ static void glnvg__vset(NVGvertex* vtx, float x, float y, float u, float v)
 	vtx->v = v;
 }
 
+#if !BLUELAB_COLORMAP
 static void glnvg__renderFill(void* uptr, NVGpaint* paint, NVGcompositeOperationState compositeOperation, NVGscissor* scissor, float fringe,
-							  const float* bounds, const NVGpath* paths, int npaths)
+			      const float* bounds, const NVGpath* paths, int npaths)
+#else
+  static void glnvg__renderFill(void* uptr, NVGpaint* paint, NVGcompositeOperationState compositeOperation, NVGscissor* scissor, float fringe,
+				const float* bounds, const NVGpath* paths, int npaths,
+				int colormapId)
+#endif
 {
 	GLNVGcontext* gl = (GLNVGcontext*)uptr;
 	GLNVGcall* call = glnvg__allocCall(gl);
@@ -1371,6 +1491,10 @@ static void glnvg__renderFill(void* uptr, NVGpaint* paint, NVGcompositeOperation
 	call->pathCount = npaths;
 	call->image = paint->image;
 	call->blendFunc = glnvg__blendCompositeOperation(compositeOperation);
+
+#if BLUELAB_COLORMAP
+    call->colormapId = colormapId;
+#endif
 
 	if (npaths == 1 && paths[0].convex)
 	{
