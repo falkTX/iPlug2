@@ -129,6 +129,9 @@ public:
    *  @param denominator The lower part of the current time signature e.g "8" in the time signature 6/8 */
   void GetTimeSig(int& numerator, int& denominator) const { numerator = mTimeInfo.mNumerator; denominator = mTimeInfo.mDenominator; }
 
+  // #bluelab
+  bool IsTransportIsRunning() { return mTimeInfo.mTransportIsRunning; }
+  
 #pragma mark -
   
   /** Get the name for a particular bus
