@@ -13,6 +13,9 @@
 #include "IGraphicsNanoVG.h"
 #include "ITextEntryControl.h"
 
+#define BL_FIX_GUI_FLICKERING 1
+#define BL_NVG_CREATE 1
+
 #if defined IGRAPHICS_GL
   #if defined OS_MAC
     #if defined IGRAPHICS_GL2
@@ -455,7 +458,11 @@ void IGraphicsNanoVG::ApplyShadowMask(ILayerPtr& layer, RawBitmapData& mask, con
 void IGraphicsNanoVG::OnViewInitialized(void* pContext)
 {  
 #if defined IGRAPHICS_METAL
+#if !BL_NVG_CREATE
   mVG = nvgCreateContext(pContext, NVG_ANTIALIAS | NVG_TRIPLE_BUFFER); //TODO: NVG_STENCIL_STROKES currently has issues
+#else
+  mVG = nvgCreateContext(NVG_ANTIALIAS | NVG_ANTIALIAS_SKIP_FRINGES /*| NVG_DEBUG*/);
+#endif
 #else
   mVG = nvgCreateContext(NVG_ANTIALIAS /*| NVG_STENCIL_STROKES*/);
 #endif
@@ -505,7 +512,14 @@ void IGraphicsNanoVG::BeginFrame()
 #ifdef IGRAPHICS_GL
     glViewport(0, 0, WindowWidth() * GetScreenScale(), WindowHeight() * GetScreenScale());
     glClearColor(0.f, 0.f, 0.f, 0.f);
+#if !BL_FIX_GUI_FLICKERING
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+#else
+    // First version: do not clear at all
+    // Second version: do not clear color buffer
+    glClear(GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+#endif
+    
   #if defined OS_MAC
     glGetIntegerv(GL_FRAMEBUFFER_BINDING, &mInitialFBO); // stash apple fbo
   #endif
