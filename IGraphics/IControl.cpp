@@ -247,6 +247,13 @@ void IControl::SetDisabled(bool disable)
   SetDirty(false);
 }
 
+//#bluelab
+void IControl::SetInteractionDisabled(bool disable)
+{
+  mDisabled = disable;
+  //SetDirty(false);
+}
+
 void IControl::OnMouseDown(float x, float y, const IMouseMod& mod)
 {
   #ifdef PROTOOLS

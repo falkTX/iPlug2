@@ -877,6 +877,18 @@ void IGraphics::DrawControl(IControl* pControl, const IRECT& bounds, float scale
       DrawRect(CONTROL_BOUNDS_COLOR, pControl->GetRECT());
     }
 #endif
+
+// #bluelab
+// Draw randomly blinking borders when controls are really redrawn.
+#if 0
+      PrepareRegion(clipBounds);
+      
+      int rndR = rand() % 255;
+      int rndG = rand() % 255;
+      int rndB = rand() % 255;
+      IColor rndColor(255, rndR, rndG, rndB);
+      DrawRect(rndColor, pControl->GetRECT());
+#endif
     
     CompleteRegion(clipBounds);
   }

@@ -351,6 +351,9 @@ public:
   /** Sets disabled mode for the control, the default implementation modifies the mBlend member
    * @param disable \c true for disabled */
   virtual void SetDisabled(bool disable);
+
+  //#bluelab
+  virtual void SetInteractionDisabled(bool disable);
   
   /** @return \c true if the control is disabled */
   bool IsDisabled() const { return mDisabled; }
@@ -1909,6 +1912,10 @@ public:
   
   /** Measures the bounds of the text that the control displays and compacts/expands the controls bounds to fit */
   void SetBoundsBasedOnStr();
+
+  // #bluelab
+  const IColor &GetTextColor() { return IControl::mText.mFGColor; }
+  void SetTextColor(const IColor &color) { IControl::mText.mFGColor = color; };
   
 protected:
   WDL_String mStr;
