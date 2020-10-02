@@ -34,8 +34,22 @@
 #include <math.h>
 #include "fft.h"
 
+// With NIKO_FFT_LEN_HACK set to 1, optimized option must be -Os instead of -O3
+// (otherwise the compilation in release would never end)
 
+// WDL-OL
+//#define FFT_MAXBITLEN 15
+
+#include "resource.h"
+
+// Niko
+//
+// NOTE: FFT_MAXBITLEN == 19 is still good
+// FFT_MAXBITLEN == 21 may cause slowness and bugs
+// (tested on Protools => made freeze due to focus after bounce
+#ifndef FFT_MAXBITLEN
 #define FFT_MAXBITLEN 15
+#endif
 
 #ifdef _MSC_VER
 #define inline __inline
@@ -56,6 +70,14 @@ static WDL_FFT_COMPLEX d8192[1023];
 static WDL_FFT_COMPLEX d16384[2047];
 static WDL_FFT_COMPLEX d32768[4095];
 
+#if NIKO_FFT_LEN_HACK
+static WDL_FFT_COMPLEX d65536[8191];
+static WDL_FFT_COMPLEX d131072[16383];
+static WDL_FFT_COMPLEX d262144[32767];
+static WDL_FFT_COMPLEX d524288[65535];
+//static WDL_FFT_COMPLEX d1048576[131071];
+//static WDL_FFT_COMPLEX d2097152[262143];
+#endif
 
 #define sqrthalf (d16[1].re)
 
@@ -575,6 +597,59 @@ static void c32768(register WDL_FFT_COMPLEX *a)
   c16384(a);
 }
 
+#if NIKO_FFT_LEN_HACK
+static void c65536(register WDL_FFT_COMPLEX *a)
+{
+    cpassbig(a,d65536,8192);
+    c16384(a + 32768 + 16384);
+    c16384(a + 32768);
+    c32768(a);
+}
+
+static void c131072(register WDL_FFT_COMPLEX *a)
+{
+    cpassbig(a,d131072,16384);
+    c32768(a + 65536 + 32768);
+    c32768(a + 65536);
+    c65536(a);
+}
+
+static void c262144(register WDL_FFT_COMPLEX *a)
+{
+    cpassbig(a,d262144,32768);
+    c65536(a + 131072 + 65536);
+    c65536(a + 131072);
+    c131072(a);
+}
+
+static void c524288(register WDL_FFT_COMPLEX *a)
+{
+    cpassbig(a,d524288,65536);
+    c131072(a + 262144 + 131072);
+    c131072(a + 262144);
+    c262144(a);
+}
+
+#if 0
+
+static void c1048576(register WDL_FFT_COMPLEX *a)
+{
+    cpassbig(a,d1048576,131072);
+    c262144(a + 524288 + 262144);
+    c262144(a + 524288);
+    c524288(a);
+}
+
+static void c2097152(register WDL_FFT_COMPLEX *a)
+{
+    cpassbig(a,d2097152,262144);
+    c524288(a + 1048576 + 524288);
+    c524288(a + 1048576);
+    c1048576(a);
+}
+#endif
+
+#endif
 
 /* n even, n > 0 */
 void WDL_fft_complexmul(WDL_FFT_COMPLEX *a,WDL_FFT_COMPLEX *b,int n)
@@ -962,6 +1037,59 @@ static void u32768(register WDL_FFT_COMPLEX *a)
   upassbig(a,d32768,4096);
 }
 
+#if NIKO_FFT_LEN_HACK
+static void u65536(register WDL_FFT_COMPLEX *a)
+{
+    u32768(a);
+    u16384(a + 32768);
+    u16384(a + 32768  + 16384 );
+    upassbig(a,d65536,8192);
+}
+
+static void u131072(register WDL_FFT_COMPLEX *a)
+{
+    u65536(a);
+    u32768(a + 65536);
+    u32768(a + 65536  + 32768 );
+    upassbig(a,d131072,16384);
+}
+
+static void u262144(register WDL_FFT_COMPLEX *a)
+{
+    u131072(a);
+    u65536(a + 131072);
+    u65536(a + 131072  + 65536 );
+    upassbig(a,d262144,32768);
+}
+
+static void u524288(register WDL_FFT_COMPLEX *a)
+{
+    u262144(a);
+    u131072(a + 262144);
+    u131072(a + 262144  + 131072 );
+    upassbig(a,d524288,65536);
+}
+
+#if 0
+
+static void u1048576(register WDL_FFT_COMPLEX *a)
+{
+    u524288(a);
+    u262144(a + 524288);
+    u262144(a + 524288  + 262144 );
+    upassbig(a,d1048576,131072);
+}
+
+static void u2097152(register WDL_FFT_COMPLEX *a)
+{
+    u1048576(a);
+    u524288(a + 1048576);
+    u524288(a + 1048576  + 524288 );
+    upassbig(a,d2097152,262144);
+}
+#endif
+
+#endif
 
 static void __fft_gen(WDL_FFT_COMPLEX *buf, const WDL_FFT_COMPLEX *buf2, int sz, int isfull)
 {
@@ -1048,11 +1176,25 @@ void WDL_fft_init()
     fft_gen(d8192,d4096,0);
     fft_gen(d16384,d8192,0);
     fft_gen(d32768,d16384,0);
+      
+#if NIKO_FFT_LEN_HACK
+    fft_gen(d65536,d32768,0);
+    fft_gen(d131072,d65536,0);
+    fft_gen(d262144,d131072,0);
+    fft_gen(d524288,d262144,0);
+    //fft_gen(d1048576,d524288,0);
+    //fft_gen(d2097152,d1048576,0);
+#endif
+      
 #undef fft_gen
 
 #ifndef WDL_FFT_NO_PERMUTE
 	  offs = 0;
-	  for (i = 2; i <= 32768; i *= 2) 
+#if !NIKO_FFT_LEN_HACK
+	  for (i = 2; i <= 32768; i *= 2)
+#else
+      for (i = 2; i <= 524288; i *= 2)
+#endif
     {
 		  idx_perm_calc(offs, i);
 		  offs += i;
@@ -1082,6 +1224,16 @@ void WDL_fft(WDL_FFT_COMPLEX *buf, int len, int isInverse)
     TMP(8192)
     TMP(16384)
     TMP(32768)
+    
+#if NIKO_FFT_LEN_HACK
+    TMP(65536) // 16
+    TMP(131072) // 17
+    TMP(262144) // 18
+    TMP(524288) // 19
+    //TMP(1048576) // 20
+    //TMP(2097152) // 21
+#endif
+          
 #undef TMP
   }
 }
@@ -1194,6 +1346,16 @@ void WDL_real_fft(WDL_FFT_REAL* buf, int len, int isInverse)
     TMP(8192)
     TMP(16384)
     TMP(32768)
+    
+#if NIKO_FFT_LEN_HACK
+    TMP(65536) // 16
+    TMP(131072) // 17
+    TMP(262144) // 18
+    TMP(524288) // 19
+    //TMP(1048576) // 20
+    //TMP(2097152) // 21
+#endif
+          
 #undef TMP
   }
 }

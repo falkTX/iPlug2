@@ -35,6 +35,9 @@
 
 #ifndef WDL_HEAPBUF_IMPL_ONLY
 
+//#bluelab
+#include <stdlib.h>
+
 #ifdef WDL_HEAPBUF_TRACE
 #include <windows.h>
 #define WDL_HEAPBUF_TRACEPARM(x) ,(x)

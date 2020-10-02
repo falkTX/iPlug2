@@ -30,6 +30,8 @@
 #include "wdltypes.h"
 #include "heapbuf.h"
 
+#include <BLTypes.h>
+
 // default to floats for sinc filter ceofficients
 #ifdef WDL_RESAMPLE_FULL_SINC_PRECISION
 typedef double WDL_SincFilterSample; 
