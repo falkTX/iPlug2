@@ -1703,7 +1703,7 @@ struct IMouseMod
    * @param c ctrl pressed
    * @param a alt pressed
    * @param touchID touch identifier, for multi-touch */
-  IMouseMod(bool l = false, bool r = false, bool s = false, bool c = false, bool a = false, cmd = falseITouchID touchID = 0)
+  IMouseMod(bool l = false, bool r = false, bool s = false, bool c = false, bool a = false, bool cmd = false, ITouchID touchID = 0)
   : L(l), R(r), S(s), C(c), A(a), Cmd(cmd), touchID(touchID)
   {}
 
