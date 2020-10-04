@@ -8,7 +8,8 @@
  ==============================================================================
 */
  
-#include "config.h"   // This is your plugin's config.h.
+//#include "config.h"   // This is your plugin's config.h.
+#include "../config.h"   // This is your plugin's config.h.
 #include <AudioUnit.r>
 
 #define UseExtendedThingResource 1
