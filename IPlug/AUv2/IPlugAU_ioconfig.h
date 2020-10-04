@@ -38,7 +38,8 @@ static uint64_t GetAPIBusTypeForChannelIOConfig(int configIdx, ERoute dir, int b
       // by default support any 4 channel layout
       APIBusTypes->Add(kAudioChannelLayoutTag_AudioUnit_4);
       APIBusTypes->Add(kAudioChannelLayoutTag_Ambisonic_B_Format);
-      APIBusTypes->Add(kAudioChannelLayoutTag_HOA_ACN_SN3D | 4);
+          // #bluelab
+          //APIBusTypes->Add(kAudioChannelLayoutTag_HOA_ACN_SN3D | 4);
       break;
     case 5:
       APIBusTypes->Add(kAudioChannelLayoutTag_AudioUnit_5_0);
@@ -61,7 +62,8 @@ static uint64_t GetAPIBusTypeForChannelIOConfig(int configIdx, ERoute dir, int b
       break;
     case 9:
     case 16: // 2nd and 3rd order ambisonics
-      APIBusTypes->Add(kAudioChannelLayoutTag_HOA_ACN_SN3D | numChans);
+             // #bluelab
+             //APIBusTypes->Add(kAudioChannelLayoutTag_HOA_ACN_SN3D | numChans);
       break;
     default:
       APIBusTypes->Add(kAudioChannelLayoutTag_DiscreteInOrder | numChans);
