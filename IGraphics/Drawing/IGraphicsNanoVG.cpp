@@ -455,7 +455,8 @@ void IGraphicsNanoVG::OnViewInitialized(void* pContext)
 #if !BL_NVG_CREATE
   mVG = nvgCreateContext(pContext, NVG_ANTIALIAS | NVG_TRIPLE_BUFFER); //TODO: NVG_STENCIL_STROKES currently has issues
 #else
-  mVG = nvgCreateContext(NVG_ANTIALIAS | NVG_ANTIALIAS_SKIP_FRINGES /*| NVG_DEBUG*/);
+  //mVG = nvgCreateContext(pContext, NVG_ANTIALIAS | NVG_ANTIALIAS_SKIP_FRINGES /*| NVG_DEBUG*/);
+    mVG = nvgCreateContext(pContext, NVG_ANTIALIAS | NVG_TRIPLE_BUFFER/*| NVG_DEBUG*/);
 #endif
 #else
   mVG = nvgCreateContext(NVG_ANTIALIAS /*| NVG_STENCIL_STROKES*/);
