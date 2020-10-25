@@ -152,6 +152,8 @@ AUv3_FRAMEWORKS = -framework AudioToolbox -framework AVFoundation -framework Cor
 // You can also build to the system plug-in folder, but you will need to explicitly add write permissions to build stuff there
 // The AAX folder should be the location of the PT Dev build plug-ins folder, installer scripts will copy to the non-developer build
 
+HOME=/Users/applematuer
+
 VST2_PATH = /Library/Audio/Plug-Ins/VST
 VST3_PATH = /Library/Audio/Plug-Ins/VST3
 AU_PATH = /Library/Audio/Plug-Ins/Components
