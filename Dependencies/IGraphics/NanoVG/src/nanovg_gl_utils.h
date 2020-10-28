@@ -56,6 +56,8 @@ void nvgluDeleteFramebuffer(NVGLUframebuffer* fb);
 
 #if BLUELAB_CHANGES
 
+#if 0 // Disabled for iPlug2 / Windows
+
 #ifdef _WIN32
 #include <GL/glext.h>
 #define NANOVG_FBO_VALID 1
@@ -71,6 +73,8 @@ void nvgluDeleteFramebuffer(NVGLUframebuffer* fb);
 #define glBindRenderbuffer glBindRenderbufferEXT
 #define glRenderbufferStorage glRenderbufferStorageEXT
 #define glDeleteRenderbuffers glDeleteRenderbuffersEXT
+#endif
+
 #endif
 
 #endif

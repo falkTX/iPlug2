@@ -319,7 +319,13 @@ NVGcontext* nvgCreateInternal(NVGparams* params)
 	fontParams.height = NVG_INIT_FONTIMAGE_SIZE;
 
 #if BLUELAB_CHANGES
+
+#ifndef WIN32
 	fontParams.flags = FONS_ZERO_BOTTOMLEFT;
+#else
+  fontParams.flags = FONS_ZERO_TOPLEFT;
+#endif
+
 #else
 	fontParams.flags = FONS_ZERO_TOPLEFT;
 #endif
@@ -2523,8 +2529,6 @@ float nvgText(NVGcontext* ctx, float x, float y, const char* string, const char*
 		  else
 		    //FONS_ZERO_BOTTOMLEFT
 		    {
-		      // Niko
-		      
 		      // Reverse windind
 		      nvg__vset(&verts[nverts], c[0], c[1], q.s0, q.t0); nverts++;
 		      nvg__vset(&verts[nverts], c[2], c[3], q.s1, q.t0); nverts++;

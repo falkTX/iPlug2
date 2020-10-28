@@ -42,7 +42,7 @@
 
 #include "IPlugAPP.h"
 
-#include "config.h"
+#include "bl_config.h"
 
 #ifdef OS_WIN
   #include <WindowsX.h>

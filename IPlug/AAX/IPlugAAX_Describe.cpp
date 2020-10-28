@@ -9,7 +9,7 @@
 */
 
 #include "IPlugAAX.h"
-#include "config.h"
+#include "bl_config.h"
 
 //AAX Components
 #include "AAX_ICollection.h"
