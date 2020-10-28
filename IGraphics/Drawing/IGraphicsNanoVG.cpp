@@ -682,6 +682,7 @@ void IGraphicsNanoVG::DoDrawText(const IText& text, const char* str, const IRECT
   PrepareAndMeasureText(text, str, measured, x, y);
   PathTransformSave();
   DoTextRotation(text, bounds, measured);
+
   nvgFillColor(mVG, NanoVGColor(text.mFGColor, pBlend));
   NanoVGSetBlendMode(mVG, pBlend);
   nvgText(mVG, x, y, str, NULL);

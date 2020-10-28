@@ -9,7 +9,7 @@
 */
 
 #include "IPlugAPP_host.h"
-#include "config.h"
+#include "bl_config.h"
 #include "resource.h"
 
 #ifdef OS_WIN

@@ -19,7 +19,7 @@
 
 #include <cstdio>
 #include "IPlugPlatform.h"
-#include "config.h"
+#include "bl_config.h"
 
 #define API_EXT2
 #ifdef VST2_API

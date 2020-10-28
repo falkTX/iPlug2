@@ -705,7 +705,9 @@ class S24 {
 };
 #pragma pack(pop)
 
-#if defined( HAVE_GETTIMEOFDAY )
+// #bluelab
+//#if defined( HAVE_GETTIMEOFDAY )
+#if HAVE_GETTIMEOFDAY
   #include <sys/time.h>
 #endif
 
