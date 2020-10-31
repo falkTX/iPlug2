@@ -328,6 +328,13 @@ IControl* IGraphics::AttachControl(IControl* pControl, int ctrlTag, const char* 
   return pControl;
 }
 
+// #bluelab
+void
+IGraphics::DetachControl(IControl* pControl)
+{
+    mControls.DeletePtr(pControl);
+}
+
 void IGraphics::AttachCornerResizer(EUIResizerMode sizeMode, bool layoutOnResize, const IColor& color, const IColor& mouseOverColor, const IColor& dragColor, float size)
 {
   AttachCornerResizer(new ICornerResizerControl(GetBounds(), size, color, mouseOverColor, dragColor), sizeMode, layoutOnResize);

@@ -130,7 +130,7 @@ public:
   void GetTimeSig(int& numerator, int& denominator) const { numerator = mTimeInfo.mNumerator; denominator = mTimeInfo.mDenominator; }
 
   // #bluelab
-  bool IsTransportIsRunning() { return mTimeInfo.mTransportIsRunning; }
+  bool IsTransportPlaying() { return mTimeInfo.mTransportIsRunning; }
   
 #pragma mark -
   

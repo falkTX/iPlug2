@@ -465,7 +465,9 @@ void IGraphicsNanoVG::OnViewInitialized(void* pContext)
     mVG = nvgCreateContext(pContext, NVG_ANTIALIAS | NVG_TRIPLE_BUFFER/*| NVG_DEBUG*/);
 #endif
 #else
-  mVG = nvgCreateContext(NVG_ANTIALIAS /*| NVG_STENCIL_STROKES*/);
+  mVG = nvgCreateContext(NVG_ANTIALIAS
+                       //| NVG_STENCIL_STROKES
+                         );
 #endif
 
   if (mVG == nullptr)

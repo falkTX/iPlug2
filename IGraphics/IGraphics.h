@@ -1318,6 +1318,10 @@ public:
    * @return The index of the control (and the number of controls in the stack) */
   IControl* AttachControl(IControl* pControl, int ctrlTag = kNoTag, const char* group = "");
 
+  // #bluelab
+  void DetachControl(IControl* pControl);
+
+    
   /** @param idx The index of the control to get
    * @return A pointer to the IControl object at idx or nullptr if not found */
   IControl* GetControl(int idx) { return mControls.Get(idx); }
