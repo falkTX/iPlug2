@@ -335,38 +335,6 @@ IGraphics::DetachControl(IControl* pControl)
     mControls.DeletePtr(pControl);
 }
 
-// #bluelab
-#if 0
-void
-IGraphics::RefreshAllControlsValues()
-{
-    int i;
-    int n = mControls.GetSize();
-    IControl** ppControl = mControls.GetList();
-    for (i = 0; i < n; ++i, ++ppControl)
-    {
-        IControl* pControl = *ppControl;
-        
-        int paramIdx = pControl->GetParamIdx();
-        
-        const IParam *param = pControl->GetParam();
-        if (param != NULL)
-        {
-            GetDelegate()->SendParameterValueFromDelegate/*API*/(paramIdx, param->Value(), false);
-            
-            // FIX: set the default value before SetParameterFromPlug
-            // otherwise, the default value would be the current value.
-            //
-            // When GUI resizing, the default values became the current values
-            // of the controls.
-            //
-            //double defaultValue = param->GetDefault(true);
-            //pControl->SetDefaultValue(defaultValue);
-        }
-    }
-}
-#endif
-
 void IGraphics::AttachCornerResizer(EUIResizerMode sizeMode, bool layoutOnResize, const IColor& color, const IColor& mouseOverColor, const IColor& dragColor, float size)
 {
   AttachCornerResizer(new ICornerResizerControl(GetBounds(), size, color, mouseOverColor, dragColor), sizeMode, layoutOnResize);
