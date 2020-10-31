@@ -1322,7 +1322,7 @@ public:
   void DetachControl(IControl* pControl);
   
   // #bluelab
-  void RefreshAllControlsValues();
+  //void RefreshAllControlsValues();
     
   /** @param idx The index of the control to get
    * @return A pointer to the IControl object at idx or nullptr if not found */

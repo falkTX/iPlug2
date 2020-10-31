@@ -336,6 +336,7 @@ IGraphics::DetachControl(IControl* pControl)
 }
 
 // #bluelab
+#if 0
 void
 IGraphics::RefreshAllControlsValues()
 {
@@ -364,6 +365,7 @@ IGraphics::RefreshAllControlsValues()
         }
     }
 }
+#endif
 
 void IGraphics::AttachCornerResizer(EUIResizerMode sizeMode, bool layoutOnResize, const IColor& color, const IColor& mouseOverColor, const IColor& dragColor, float size)
 {
