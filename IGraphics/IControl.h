@@ -351,7 +351,7 @@ public:
   /** Sets disabled mode for the control, the default implementation modifies the mBlend member
    * @param disable \c true for disabled */
   virtual void SetDisabled(bool disable);
-
+    
   //#bluelab
   virtual void SetInteractionDisabled(bool disable);
   
