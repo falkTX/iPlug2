@@ -19,6 +19,12 @@
 #define strtok_r strtok_s
 #endif
 
+// #bluelab
+// FIX: Reaper, VST play a region without loop
+// Just at the end of the region the sample pos value
+// returned is very huge (invalid).
+#define FIX_VST_REAPER_INVALID_SAMPLE_POS 1
+
 using namespace iplug;
 
 IPlugProcessor::IPlugProcessor(const Config& config, EAPI plugAPI)
@@ -112,6 +118,22 @@ double IPlugProcessor::GetSamplesPerBeat() const
     return GetSampleRate() * 60.0 / tempo;
 
   return 0.0;
+}
+
+double
+IPlugProcessor::GetTransportSamplePos()
+{
+  double samplePos = mTimeInfo.mSamplePos;
+  
+#if FIX_VST_REAPER_INVALID_SAMPLE_POS
+  // About 10 days at sample rate 176000*4Hz
+  if (samplePos > 1e10)
+  {
+    return -1.0;
+  }
+#endif
+  
+  return samplePos;
 }
 
 #pragma mark -

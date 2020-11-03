@@ -148,7 +148,7 @@ IPlugVST2::IPlugVST2(const InstanceInfo& info, const Config& config)
   mAEffect.processDoubleReplacing = VSTProcessDoubleReplacing;
   mAEffect.initialDelay = config.latency;
   mAEffect.flags = effFlagsCanReplacing | effFlagsCanDoubleReplacing;
-
+    
   if (config.plugDoesChunks) { mAEffect.flags |= effFlagsProgramChunks; }
   if (LegalIO(1, -1)) { mAEffect.flags |= __effFlagsCanMonoDeprecated; }
   if (config.plugType == EIPlugPluginType::kInstrument) { mAEffect.flags |= effFlagsIsSynth; }
@@ -955,7 +955,8 @@ void IPlugVST2::VSTPreProcess(SAMPLETYPE** inputs, SAMPLETYPE** outputs, VstInt3
   AttachBuffers(ERoute::kInput, 0, MaxNChannels(ERoute::kInput), inputs, nFrames);
   AttachBuffers(ERoute::kOutput, 0, MaxNChannels(ERoute::kOutput), outputs, nFrames);
 
-  VstTimeInfo* pTI = (VstTimeInfo*) mHostCallback(&mAEffect, audioMasterGetTime, 0, kVstPpqPosValid | kVstTempoValid | kVstBarsValid | kVstCyclePosValid | kVstTimeSigValid, 0, 0);
+  VstTimeInfo* pTI = (VstTimeInfo*) mHostCallback(&mAEffect, audioMasterGetTime, 0,
+                                                  kVstPpqPosValid | kVstTempoValid | kVstBarsValid | kVstCyclePosValid |kVstTimeSigValid, 0, 0);
 
   ITimeInfo timeInfo;
 

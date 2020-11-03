@@ -132,6 +132,9 @@ public:
   // #bluelab
   bool IsTransportPlaying() { return mTimeInfo.mTransportIsRunning; }
   
+  // #bluelab
+  double GetTransportSamplePos();
+  
 #pragma mark -
   
   /** Get the name for a particular bus
