@@ -265,12 +265,13 @@ void IControl::SetInteractionDisabled(bool disable)
 
 void IControl::OnMouseDown(float x, float y, const IMouseMod& mod)
 {
-  #ifdef PROTOOLS
+  // #bluelab
+  //#ifdef PROTOOLS
   if (mod.A)
   {
     SetValueToDefault(GetValIdxForPos(x, y));
   }
-  #endif
+  //#endif
 
   if (mod.R)
     PromptUserInput(GetValIdxForPos(x, y));
@@ -278,11 +279,12 @@ void IControl::OnMouseDown(float x, float y, const IMouseMod& mod)
 
 void IControl::OnMouseDblClick(float x, float y, const IMouseMod& mod)
 {
-  #ifdef PROTOOLS
-  PromptUserInput(GetValIdxForPos(x, y));
-  #else
+    // #bluelab
+  //#ifdef PROTOOLS
+  //PromptUserInput(GetValIdxForPos(x, y));
+  //#else
   SetValueToDefault(GetValIdxForPos(x, y));
-  #endif
+  //#endif
 }
 
 void IControl::OnMouseOver(float x, float y, const IMouseMod& mod)

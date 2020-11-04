@@ -1826,6 +1826,11 @@ protected:
 public:
   std::unique_ptr<ImGuiRenderer> mImGuiRenderer;
 #endif
+    
+private:
+  // #bluelab
+  // Timer to discard too long double-clicks
+  unsigned long long mPrevMouseDown;
 };
 
 END_IGRAPHICS_NAMESPACE

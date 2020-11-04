@@ -14,6 +14,9 @@
 #pragma warning(disable:4244) // float conversion
 #include "nanosvg.h"
 
+// #bluelab
+#include <UpTime.h>
+
 #if defined VST3_API
 #include "pluginterfaces/base/ustring.h"
 #include "IPlugVST3.h"
@@ -966,6 +969,9 @@ void IGraphics::OnMouseDown(const std::vector<IMouseInfo>& points)
 {
 //  Trace("IGraphics::OnMouseDown", __LINE__, "x:%0.2f, y:%0.2f, mod:LRSCA: %i%i%i%i%i", x, y, mod.L, mod.R, mod.S, mod.C, mod.A);
 
+  // #bluelab
+  mPrevMouseDown = UpTime::GetUpTime();
+    
   bool singlePoint = points.size() == 1;
   
 #ifdef IGRAPHICS_IMGUI
@@ -1239,11 +1245,21 @@ bool IGraphics::OnMouseDblClick(float x, float y, const IMouseMod& mod)
   }
 #endif
 
+  // #bluelab
+  bool dblClickValidated = true;
+  unsigned long long upTime = UpTime::GetUpTime();
+  unsigned long long dblClickDelay = upTime - mPrevMouseDown;
+  mPrevMouseDown = upTime;
+  if (dblClickDelay > 250)
+  {
+      dblClickValidated = false;
+  }
+    
   IControl* pControl = GetMouseControl(x, y, true);
     
   if (pControl)
   {
-    if (pControl->GetMouseDblAsSingleClick())
+    if (pControl->GetMouseDblAsSingleClick() || !dblClickValidated)
     {
       IMouseInfo info;
       info.x = x;
