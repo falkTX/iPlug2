@@ -399,6 +399,8 @@ static GLNVGtexture* glnvg__findTexture(GLNVGcontext* gl, int id)
 	return NULL;
 }
 
+static void glnvg__checkError(GLNVGcontext* gl, const char* str); // #bluelab
+
 static int glnvg__deleteTexture(GLNVGcontext* gl, int id)
 {
 	int i;
@@ -407,6 +409,9 @@ static int glnvg__deleteTexture(GLNVGcontext* gl, int id)
 			if (gl->textures[i].tex != 0 && (gl->textures[i].flags & NVG_IMAGE_NODELETE) == 0)
 				glDeleteTextures(1, &gl->textures[i].tex);
 			memset(&gl->textures[i], 0, sizeof(gl->textures[i]));
+            
+            glnvg__checkError(gl, "delete tex"); // #bluelab
+            
 			return 1;
 		}
 	}

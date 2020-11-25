@@ -72,6 +72,10 @@ IGraphics::IGraphics(IGEditorDelegate& dlg, int w, int h, int fps, float scale)
   bitmapStorage.Retain();
   StaticStorage<SVGHolder>::Accessor svgStorage(sSVGCache);
   svgStorage.Retain();
+    
+#ifdef IGRAPHICS_GL
+  mNeedDrawResize = false;
+#endif
 }
 
 IGraphics::~IGraphics()
@@ -128,8 +132,14 @@ void IGraphics::Resize(int w, int h, float scale, bool needsPlatformResize)
   PlatformResize(GetDelegate()->EditorResizeFromUI(windowWidth, windowHeight, needsPlatformResize));
   ForAllControls(&IControl::OnResize);
   SetAllControlsDirty();
+    
+#ifndef IGRAPHICS_GL
   DrawResize();
-  
+#else
+  // Will call DrawResize() next time the GL context is bound.
+  mNeedDrawResize = true;
+#endif
+    
   if(mLayoutOnResize)
     GetDelegate()->LayoutUI(this);
 }
@@ -934,6 +944,14 @@ void IGraphics::Draw(const IRECT& bounds, float scale)
 
 void IGraphics::Draw(IRECTList& rects)
 {
+#ifdef IGRAPHICS_GL
+  if (mNeedDrawResize)
+  {
+      DrawResize();
+      mNeedDrawResize = false;
+  }
+#endif
+    
   if (!rects.Size())
     return;
     

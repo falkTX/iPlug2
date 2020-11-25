@@ -1831,6 +1831,13 @@ private:
   // #bluelab
   // Timer to discard too long double-clicks
   unsigned long long mPrevMouseDown;
+    
+  // #bluelab
+  // Case: use a button that resizes the gui when clicked
+  // For this, make sure to call DrawResize() when the GL context is bound.
+#ifdef IGRAPHICS_GL
+  bool mNeedDrawResize;
+#endif
 };
 
 END_IGRAPHICS_NAMESPACE
