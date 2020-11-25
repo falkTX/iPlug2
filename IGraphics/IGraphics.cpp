@@ -135,13 +135,13 @@ void IGraphics::Resize(int w, int h, float scale, bool needsPlatformResize)
     
 #ifndef IGRAPHICS_GL
   DrawResize();
+    
+  if(mLayoutOnResize)
+    GetDelegate()->LayoutUI(this);
 #else
   // Will call DrawResize() next time the GL context is bound.
   mNeedDrawResize = true;
 #endif
-    
-  if(mLayoutOnResize)
-    GetDelegate()->LayoutUI(this);
 }
 
 void IGraphics::SetLayoutOnResize(bool layoutOnResize)
@@ -948,6 +948,9 @@ void IGraphics::Draw(IRECTList& rects)
   if (mNeedDrawResize)
   {
       DrawResize();
+      if(mLayoutOnResize)
+          GetDelegate()->LayoutUI(this);
+      
       mNeedDrawResize = false;
   }
 #endif
