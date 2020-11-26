@@ -467,6 +467,7 @@ void IGraphicsNanoVG::OnViewInitialized(void* pContext)
 #else
   mVG = nvgCreateContext(NVG_ANTIALIAS
                        //| NVG_STENCIL_STROKES
+                       //| NVG_DEBUG
                          );
 #endif
 
@@ -497,7 +498,7 @@ void IGraphicsNanoVG::DrawResize()
 {
   if (mMainFrameBuffer != nullptr)
     nvgDeleteFramebuffer(mMainFrameBuffer);
-  
+    
   if (mVG)
   {
     mMainFrameBuffer = nvgCreateFramebuffer(mVG, WindowWidth() * GetScreenScale(), WindowHeight() * GetScreenScale(), 0);
