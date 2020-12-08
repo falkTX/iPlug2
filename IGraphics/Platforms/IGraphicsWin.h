@@ -38,6 +38,8 @@ public:
 
   void PlatformResize(bool parentHasResized) override;
 
+  bool GetScreenResolution(int *width, int *height) override;
+  
 #ifdef IGRAPHICS_GL
   void DrawResize() override; // overriden here to deal with GL graphics context capture
 #endif

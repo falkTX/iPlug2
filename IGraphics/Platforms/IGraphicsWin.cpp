@@ -910,6 +910,21 @@ void IGraphicsWin::PlatformResize(bool parentHasResized)
   }
 }
 
+// #bluelab
+bool 
+IGraphicsWin::GetScreenResolution(int *width, int *height)
+{
+	const HWND hDesktop = GetDesktopWindow();
+
+	RECT desktop;
+	GetWindowRect(hDesktop, &desktop);
+	
+	*width = desktop.right;
+	*height = desktop.bottom;
+
+	return true;
+}
+
 #ifdef IGRAPHICS_GL
 void IGraphicsWin::DrawResize()
 {

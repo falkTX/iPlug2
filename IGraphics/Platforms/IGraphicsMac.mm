@@ -640,7 +640,22 @@ void IGraphicsMac::CreatePlatformImGui()
 #endif
 }
 
-#if defined IGRAPHICS_NANOVG
+// #bluelab
+bool
+IGraphicsMac::GetScreenResolution(int *width, int *height)
+{
+    CGDirectDisplayID display = CGMainDisplayID();
+    *width = CGDisplayPixelsWide(display);
+    *height = CGDisplayPixelsHigh(display);
+    
+    return true;
+}
+
+#ifdef IGRAPHICS_AGG
+  #include "IGraphicsAGG.cpp"
+#elif defined IGRAPHICS_CAIRO
+  #include "IGraphicsCairo.cpp"
+#elif defined IGRAPHICS_NANOVG
   #include "IGraphicsNanoVG.cpp"
 #elif defined IGRAPHICS_SKIA
   #include "IGraphicsSkia.cpp"

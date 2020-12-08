@@ -971,6 +971,9 @@ public:
 
   /** Called by some platform IGraphics classes in order to translate the graphics context, in response to e.g. iOS onscreen keyboard appearing */
   void SetTranslation(float x, float y) { mXTranslation = x; mYTranslation = y; }
+
+  // #bluelab
+  virtual bool GetScreenResolution(int *width, int *height) = 0;
   
   /** Called repeatedly at frame rate by the platform class to check what the graphics context says is dirty.
    * @param rects The rectangular regions which will be added to to mark what is dirty in the context
