@@ -21,6 +21,8 @@ static constexpr int DEFAULT_FPS = 25; // TODO: default 60 FPS?
 // Only looked at if USE_IDLE_CALLS is defined.
 static constexpr int IDLE_TICKS = 20;
 
+static constexpr int BL_IDLE_TICKS = 1;
+
 static constexpr int DEFAULT_ANIMATION_DURATION = 100;
 
 #ifndef CONTROL_BOUNDS_COLOR

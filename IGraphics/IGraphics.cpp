@@ -52,6 +52,8 @@ namespace std {
 };
 #endif
 
+#define BL_ON_GUI_IDLE 1
+
 using namespace iplug;
 using namespace igraphics;
 
@@ -850,6 +852,8 @@ bool IGraphics::IsDirty(IRECTList& rects)
   ForAllControlsFunc(func);
 
 #ifdef USE_IDLE_CALLS
+    
+#if !BL_ON_GUI_IDLE
   if (dirty)
   {
     mIdleTicks = 0;
@@ -859,6 +863,16 @@ bool IGraphics::IsDirty(IRECTList& rects)
     OnGUIIdle();
     mIdleTicks = 0;
   }
+#else
+  // Call idle, whatever the dirty flag
+  // (because some of bluelab controls set the dirty flag constantly)
+  if (++mIdleTicks > BL_IDLE_TICKS)
+  {
+    OnGUIIdle();
+    mIdleTicks = 0;
+  }
+#endif
+    
 #endif
 
   //TODO: for GL backends, having an ImGui on top currently requires repainting everything on each frame
