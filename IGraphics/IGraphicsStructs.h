@@ -52,6 +52,9 @@ using IPopupFunction = std::function<void(IPopupMenu* pMenu)>;
 using IDisplayTickFunc = std::function<void()>;
 using ITouchID = uintptr_t;
 
+// #bluelab
+using IDropFunc = std::function<void(const char* str)>;
+
 /** A click action function that does nothing */
 void EmptyClickActionFunc(IControl* pCaller);
 

@@ -1388,6 +1388,13 @@ void IGraphics::OnDrop(const char* str, float x, float y)
 {
   IControl* pControl = GetMouseControl(x, y, false);
   if (pControl) pControl->OnDrop(str);
+    
+  // #bluelab
+  // NOTE: does not manage "handled" for the moment
+  // So if we have both mDropFunc and matching controls with OnDrop(),
+  // OnDrop() will be managed several times at different places
+  if (mDropFunc)
+      mDropFunc(str);
 }
 
 void IGraphics::ReleaseMouseCapture()

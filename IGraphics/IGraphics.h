@@ -1168,7 +1168,10 @@ public:
   /** A helper to set the IGraphics KeyHandlerFunc in order to make an instrument playable via QWERTY keys
    * @param func A function to do something when a MIDI message is triggered */
   void SetQwertyMidiKeyHandlerFunc(std::function<void(const IMidiMsg& msg)> func = nullptr);
-  
+
+  // #bluelab
+  void SetDropFunc(IDropFunc func) { mDropFunc = func; }
+    
   /** Set functions to draw DearImGui widgets on top of the IGraphics context (only relevant when IGRAPHICS_IMGUI is defined) 
    * @param drawFunc Called at the framerate, where you do the main ImGui
    * @param setupFunc Called once after ImGui context is created */
@@ -1805,6 +1808,9 @@ private:
   IKeyHandlerFunc mKeyHandlerFunc = nullptr;
   IDisplayTickFunc mDisplayTickFunc = nullptr;
 
+  // #bluelab
+  IDropFunc mDropFunc = nullptr;
+    
 protected:
   IGEditorDelegate* mDelegate;
   bool mCursorHidden = false;
