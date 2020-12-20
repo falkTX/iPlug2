@@ -664,6 +664,9 @@ static int glnvg__renderCreate(void* uptr)
 		"	float scissor = scissorMask(fpos);\n"
 		"#ifdef EDGE_AA\n"
 		"	float strokeAlpha = strokeMask();\n"
+#if BLUELAB_COLORMAP
+	        "       if (useColormap > 0.5) strokeAlpha = 1.0;\n"
+#endif
 		"	if (strokeAlpha < strokeThr) discard;\n"
 		"#else\n"
 		"	float strokeAlpha = 1.0;\n"
