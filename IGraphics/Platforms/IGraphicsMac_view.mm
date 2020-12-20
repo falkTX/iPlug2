@@ -430,6 +430,9 @@ extern StaticStorage<CoreTextFontDescriptor> sFontDescriptorCache;
   self.pixelFormat = pPixelFormat;
   self.openGLContext = pGLContext;
   self.wantsBestResolutionOpenGLSurface = YES;
+  // #bluelab, applied https://github.com/iPlug2/iPlug2/issues/603
+  // Avoid brief garbage display when app just starts (done for Ghost)
+  self.layer.backgroundColor = NSColor.blackColor.CGColor;
   #endif // IGRAPHICS_GL
 
   #if !defined IGRAPHICS_GL
