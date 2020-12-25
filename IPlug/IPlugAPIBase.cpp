@@ -173,12 +173,17 @@ void IPlugAPIBase::OnTimer(Timer& t)
     }
 // !VST3 ******************************************************************************
 #else
+    // #bluelab: added mutex. We change parameters from timer!
+    // If at the same time parameter is changed from ProcessBlock(), this is bad
+    // (Added for AutoGain)
+    ENTER_PARAMS_MUTEX;
     while(mParamChangeFromProcessor.ElementsAvailable())
     {
       ParamTuple p;
       mParamChangeFromProcessor.Pop(p);
       SendParameterValueFromDelegate(p.idx, p.value, false);
     }
+    LEAVE_PARAMS_MUTEX;
     
     while (mMidiMsgsFromProcessor.ElementsAvailable())
     {
