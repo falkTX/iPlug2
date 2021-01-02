@@ -465,10 +465,14 @@ void IGraphicsNanoVG::OnViewInitialized(void* pContext)
     mVG = nvgCreateContext(pContext, NVG_ANTIALIAS | NVG_TRIPLE_BUFFER/*| NVG_DEBUG*/);
 #endif
 #else
-  mVG = nvgCreateContext(NVG_ANTIALIAS
-                         | NVG_STENCIL_STROKES
-                         // | NVG_DEBUG
-                         );
+  // ORIGIN: before nanovg AWTK optimizations
+  //mVG = nvgCreateContext(NVG_ANTIALIAS
+  //                       | NVG_STENCIL_STROKES
+  //                       // | NVG_DEBUG
+  //                       );
+    
+  // NEW: do not use anti-liasing (seems to slow up)
+  mVG = nvgCreateContext(0);
 #endif
 
   if (mVG == nullptr)
@@ -773,13 +777,18 @@ bool IGraphicsNanoVG::LoadAPIFont(const char* fontID, const PlatformFontPtr& fon
     
   if (cached)
   {
-    nvgCreateFontFaceMem(mVG, fontID, cached->Get(), cached->GetSize(), cached->GetFaceIdx(), 0);
+      // awtk
+      //nvgCreateFontMem(mVG, fontID, cached->Get(), cached->GetSize(), 0);
+      nvgCreateFontFaceMem(mVG, fontID, cached->Get(), cached->GetSize(), cached->GetFaceIdx(), 0);
+      
     return true;
   }
     
   IFontDataPtr data = font->GetFontData();
 
-  if (data->IsValid() && nvgCreateFontFaceMem(mVG, fontID, data->Get(), data->GetSize(), data->GetFaceIdx(), 0) != -1)
+    // awtk
+  //if (data->IsValid() && nvgCreateFontMem(mVG, fontID, data->Get(), data->GetSize(), 0) != -1)
+    if (data->IsValid() && nvgCreateFontFaceMem(mVG, fontID, data->Get(), data->GetSize(), data->GetFaceIdx(), 0) != -1)
   {
     storage.Add(data.release(), fontID);
     return true;

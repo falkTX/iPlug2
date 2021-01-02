@@ -85,6 +85,15 @@ static GLint defaultFBO = -1;
 static GLint defaultFBO2 = -1;
 #endif
 
+int nvgluGetCurrFramebuffer() {
+#ifdef NANOVG_FBO_VALID
+  GLint defaultFBO;
+  glGetIntegerv(GL_FRAMEBUFFER_BINDING, &defaultFBO);
+  return defaultFBO;
+#else
+  return -1;
+#endif
+}
 
 NVGLUframebuffer* nvgluCreateFramebuffer(NVGcontext* ctx, int w, int h, int imageFlags)
 {
@@ -186,6 +195,14 @@ void nvgluBindFramebuffer2(NVGLUframebuffer* fb)
 #endif
 }
 #endif
+
+void nvgluReadCurrentFramebufferData(unsigned int x, unsigned int y, unsigned int w, unsigned int h, unsigned int width, unsigned int height, void* pixels)
+{
+  if(x + w <= width && y + h <= height && pixels != NULL) {
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+    glReadPixels(x, y, w, h, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+  }
+}
 
 void nvgluDeleteFramebuffer(NVGLUframebuffer* fb)
 {

@@ -159,7 +159,8 @@ enum NVGimageFlags {
 // frame buffer size. In that case you would set windowWidth/Height to the window size
 // devicePixelRatio to: frameBufferWidth / windowWidth.
 void nvgBeginFrame(NVGcontext* ctx, float windowWidth, float windowHeight, float devicePixelRatio);
-
+void nvgBeginFrameEx(NVGcontext* ctx, float windowWidth, float windowHeight, float devicePixelRatio, int reset);
+  
 // Cancels drawing the current frame.
 void nvgCancelFrame(NVGcontext* ctx);
 
@@ -394,6 +395,9 @@ void nvgImageSize(NVGcontext* ctx, int image, int* w, int* h);
 // Deletes created image.
 void nvgDeleteImage(NVGcontext* ctx, int image);
 
+// Deletes font's assets for font's name.
+void nvgDeleteFontByName(NVGcontext* ctx, const char* name);
+  
 //
 // Paints
 //
@@ -426,6 +430,9 @@ NVGpaint nvgRadialGradient(NVGcontext* ctx, float cx, float cy, float inr, float
 NVGpaint nvgImagePattern(NVGcontext* ctx, float ox, float oy, float ex, float ey,
 						 float angle, int image, float alpha);
 
+// get xfrom data
+void nvgGetStateXfrom(NVGcontext* ctx, float* xform);
+  
 //
 // Scissoring
 //
@@ -444,9 +451,13 @@ void nvgScissor(NVGcontext* ctx, float x, float y, float w, float h);
 // transform space. The resulting shape is always rectangle.
 void nvgIntersectScissor(NVGcontext* ctx, float x, float y, float w, float h);
 
+void nvgIntersectScissor_ex(NVGcontext* ctx, float* x, float* y, float* w, float* h);
+  
 // Reset and disables scissoring.
 void nvgResetScissor(NVGcontext* ctx);
 
+void nvgIntersectScissorForOtherRect(NVGcontext* ctx, float x, float y, float w, float h, float dx, float dy, float dw, float dh);
+  
 //
 // Paths
 //
@@ -554,6 +565,8 @@ int nvgCreateFont(NVGcontext* ctx, const char* name, const char* filename);
 
 // Creates font by loading it from the disk from specified file name, loading a specific face by index.
 // Returns handle to the font.
+// awtk
+//int nvgCreateFontFace(NVGcontext* ctx, const char* name, const char* filename, int faceIdx);
 int nvgCreateFontFace(NVGcontext* ctx, const char* name, const char* filename, int faceIdx);
 
 // Creates font by loading it from the specified memory chunk.
@@ -562,6 +575,8 @@ int nvgCreateFontMem(NVGcontext* ctx, const char* name, unsigned char* data, int
 
 // Creates font by loading it from the specified memory chunk, loading a specific face by index.
 // Returns handle to the font.
+// awtk
+//int nvgCreateFontFaceMem(NVGcontext* ctx, const char* name, unsigned char* data, int ndata, int faceIdx, int freeData);
 int nvgCreateFontFaceMem(NVGcontext* ctx, const char* name, unsigned char* data, int ndata, int faceIdx, int freeData);
 
 // Finds a loaded font of specified name, and returns handle to it, or -1 if the font is not found.
@@ -662,8 +677,16 @@ typedef struct NVGpath NVGpath;
 struct NVGparams {
 	void* userPtr;
 	int edgeAntiAlias;
+
+        void (*setLineCap)(void* uptr, int lineCap);
+	void (*setLineJoin)(void* uptr, int lineJoin);
+
+        int (*clearCache)(void* uptr);
 	int (*renderCreate)(void* uptr);
-	int (*renderCreateTexture)(void* uptr, int type, int w, int h, int imageFlags, const unsigned char* data);
+        int (*findTexture)(void* uptr, const void* data);
+	void (*setStateXfrom)(void* uptr, float* xform);
+	int (*renderCreateTexture)(void* uptr, int type, int w, int h, int stride, int imageFlags, const unsigned char* data);
+        //int (*renderCreateTexture)(void* uptr, int type, int w, int h, int imageFlags, const unsigned char* data);
 	int (*renderDeleteTexture)(void* uptr, int image);
 	int (*renderUpdateTexture)(void* uptr, int image, int x, int y, int w, int h, const unsigned char* data);
 	int (*renderGetTextureSize)(void* uptr, int image, int* w, int* h);
@@ -678,7 +701,8 @@ struct NVGparams {
 #endif
     
 	void (*renderStroke)(void* uptr, NVGpaint* paint, NVGcompositeOperationState compositeOperation, NVGscissor* scissor, float fringe, float strokeWidth, const NVGpath* paths, int npaths);
-	void (*renderTriangles)(void* uptr, NVGpaint* paint, NVGcompositeOperationState compositeOperation, NVGscissor* scissor, const NVGvertex* verts, int nverts, float fringe);
+        void (*renderTriangles)(void* uptr, NVGpaint* paint, NVGcompositeOperationState compositeOperation, NVGscissor* scissor, const NVGvertex* verts, int nverts, float fringe);
+      //void (*renderTriangles)(void* uptr, NVGpaint* paint, NVGcompositeOperationState compositeOperation, NVGscissor* scissor, const NVGvertex* verts, int nverts);
 	void (*renderDelete)(void* uptr);
 };
 typedef struct NVGparams NVGparams;
@@ -711,6 +735,11 @@ void nvgSetColormap(NVGcontext* ctx, int colormapId);
 
 #define NVG_NOTUSED(v) for (;;) { (void)(1 ? (void)0 : ( (void)(v) ) ); break; }
 
+NVGparams* nvgGetParams(NVGcontext* ctx);
+int nvgCreateImageRaw(NVGcontext* ctx, int w, int h, int format, int stride, int imageFlags, const unsigned char* data);
+int nvgFindTextureRaw(NVGcontext* ctx, const void* data);
+int nvgClearCache(NVGcontext* ctx);
+  
 #ifdef __cplusplus
 }
 #endif
