@@ -472,7 +472,10 @@ void IGraphicsNanoVG::OnViewInitialized(void* pContext)
   //                       );
     
   // NEW: do not use anti-liasing (seems to slow up)
-  mVG = nvgCreateContext(0);
+  // NOTE: but on UST for example, no antialiasing is very visible
+  //mVG = nvgCreateContext(0);
+    
+  mVG = nvgCreateContext(NVG_ANTIALIAS);
 #endif
 
   if (mVG == nullptr)
