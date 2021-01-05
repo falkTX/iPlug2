@@ -122,7 +122,7 @@ public:
   bool BitmapExtSupported(const char* ext) override;
 
   //#bluelab
-  IBitmap *CreateBitmap(int w, int h, int bpp, unsigned char *data) override;
+  IBitmap CreateBitmap(int w, int h, int bpp, unsigned char *data) override;
     
   void DeleteFBO(NVGframebuffer* pBuffer);
   

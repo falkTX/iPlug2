@@ -1651,7 +1651,8 @@ public:
   void ClearGestureRegions();
 
   // #bluelab
-  virtual IBitmap *CreateBitmap(int w, int h, int bpp, unsigned char *data) { return NULL; };
+  virtual IBitmap CreateBitmap(int w, int h, int bpp, unsigned char *data)
+                    { IBitmap dummyBmp; return dummyBmp; };
     
 protected:
   /** Drawing API method to load a bitmap, called internally

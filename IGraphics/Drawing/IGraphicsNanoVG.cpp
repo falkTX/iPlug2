@@ -411,7 +411,7 @@ void IGraphicsNanoVG::GetLayerBitmapData(const ILayerPtr& layer, RawBitmapData& 
   }
 }
 
-IBitmap *
+IBitmap
 IGraphicsNanoVG::CreateBitmap(int w, int h, int bpp, unsigned char *data)
 {
     int idx = 0;
@@ -430,7 +430,7 @@ IGraphicsNanoVG::CreateBitmap(int w, int h, int bpp, unsigned char *data)
     
     Bitmap *bmp0 = new Bitmap(mVG, name, scale, idx, false);
     
-    IBitmap *bmp = new IBitmap(bmp0, nStates, framesAreHorizontal, name);
+    IBitmap bmp(bmp0, nStates, framesAreHorizontal, name);
     
     return bmp;
 }
