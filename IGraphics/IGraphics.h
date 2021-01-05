@@ -1650,6 +1650,9 @@ public:
   /** Remove all gesture recognizers linked to regions */
   void ClearGestureRegions();
 
+  // #bluelab
+  virtual IBitmap *CreateBitmap(int w, int h, int bpp, unsigned char *data) { return NULL; };
+    
 protected:
   /** Drawing API method to load a bitmap, called internally
    * @param fileNameOrResID A CString absolute path or resource ID

@@ -411,6 +411,30 @@ void IGraphicsNanoVG::GetLayerBitmapData(const ILayerPtr& layer, RawBitmapData& 
   }
 }
 
+IBitmap *
+IGraphicsNanoVG::CreateBitmap(int w, int h, int bpp, unsigned char *data)
+{
+    int idx = 0;
+    int imageFlags = 0;
+ 
+    char *name = "";
+    int scale = 1;
+    
+    int nStates = 1;
+    int framesAreHorizontal = 0;
+    
+    ActivateGLContext();
+    idx = nvgCreateImageRGBA(mVG, w, h, imageFlags, data);
+    DeactivateGLContext();
+
+    
+    Bitmap *bmp0 = new Bitmap(mVG, name, scale, idx, false);
+    
+    IBitmap *bmp = new IBitmap(bmp0, nStates, framesAreHorizontal, name);
+    
+    return bmp;
+}
+
 void IGraphicsNanoVG::ApplyShadowMask(ILayerPtr& layer, RawBitmapData& mask, const IShadow& shadow)
 {
   const APIBitmap* pBitmap = layer->GetAPIBitmap();
