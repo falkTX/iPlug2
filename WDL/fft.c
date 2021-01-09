@@ -34,15 +34,15 @@
 #include <math.h>
 #include "fft.h"
 
-// With NIKO_FFT_LEN_HACK set to 1, optimized option must be -Os instead of -O3
+// With BL_FFT_LEN_HACK set to 1, optimized option must be -Os instead of -O3
 // (otherwise the compilation in release would never end)
 
 // WDL-OL
 //#define FFT_MAXBITLEN 15
 
-#include "resource.h"
+//#include "resource.h"
 
-// Niko
+// #bluelab
 //
 // NOTE: FFT_MAXBITLEN == 19 is still good
 // FFT_MAXBITLEN == 21 may cause slowness and bugs
@@ -70,7 +70,7 @@ static WDL_FFT_COMPLEX d8192[1023];
 static WDL_FFT_COMPLEX d16384[2047];
 static WDL_FFT_COMPLEX d32768[4095];
 
-#if NIKO_FFT_LEN_HACK
+#if BL_FFT_LEN_HACK
 static WDL_FFT_COMPLEX d65536[8191];
 static WDL_FFT_COMPLEX d131072[16383];
 static WDL_FFT_COMPLEX d262144[32767];
@@ -597,7 +597,7 @@ static void c32768(register WDL_FFT_COMPLEX *a)
   c16384(a);
 }
 
-#if NIKO_FFT_LEN_HACK
+#if BL_FFT_LEN_HACK
 static void c65536(register WDL_FFT_COMPLEX *a)
 {
     cpassbig(a,d65536,8192);
@@ -1037,7 +1037,7 @@ static void u32768(register WDL_FFT_COMPLEX *a)
   upassbig(a,d32768,4096);
 }
 
-#if NIKO_FFT_LEN_HACK
+#if BL_FFT_LEN_HACK
 static void u65536(register WDL_FFT_COMPLEX *a)
 {
     u32768(a);
@@ -1177,7 +1177,7 @@ void WDL_fft_init()
     fft_gen(d16384,d8192,0);
     fft_gen(d32768,d16384,0);
       
-#if NIKO_FFT_LEN_HACK
+#if BL_FFT_LEN_HACK
     fft_gen(d65536,d32768,0);
     fft_gen(d131072,d65536,0);
     fft_gen(d262144,d131072,0);
@@ -1190,7 +1190,7 @@ void WDL_fft_init()
 
 #ifndef WDL_FFT_NO_PERMUTE
 	  offs = 0;
-#if !NIKO_FFT_LEN_HACK
+#if !BL_FFT_LEN_HACK
 	  for (i = 2; i <= 32768; i *= 2)
 #else
       for (i = 2; i <= 524288; i *= 2)
@@ -1225,7 +1225,7 @@ void WDL_fft(WDL_FFT_COMPLEX *buf, int len, int isInverse)
     TMP(16384)
     TMP(32768)
     
-#if NIKO_FFT_LEN_HACK
+#if BL_FFT_LEN_HACK
     TMP(65536) // 16
     TMP(131072) // 17
     TMP(262144) // 18
@@ -1347,7 +1347,7 @@ void WDL_real_fft(WDL_FFT_REAL* buf, int len, int isInverse)
     TMP(16384)
     TMP(32768)
     
-#if NIKO_FFT_LEN_HACK
+#if BL_FFT_LEN_HACK
     TMP(65536) // 16
     TMP(131072) // 17
     TMP(262144) // 18
