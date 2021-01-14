@@ -49,6 +49,12 @@
 #include <cstdlib>
 #include "wdltypes.h"
 
+// #bluelab
+// ORIGIN
+#define BL_GRANUL 4096
+// TEST
+//#define BL_GRANUL 32768
+
 class WDL_HeapBuf
 {
   public:
@@ -81,7 +87,7 @@ class WDL_HeapBuf
 
 
   #ifndef WDL_HEAPBUF_TRACE
-    explicit WDL_HeapBuf(int granul=4096) : m_buf(NULL), m_alloc(0), m_size(0), m_granul(granul)
+    explicit WDL_HeapBuf(int granul=BL_GRANUL) : m_buf(NULL), m_alloc(0), m_size(0), m_granul(granul)
     {
     }
     ~WDL_HeapBuf()
@@ -89,7 +95,7 @@ class WDL_HeapBuf
       free(m_buf);
     }
   #else
-    explicit WDL_HeapBuf(int granul=4096, const char *tracetype="WDL_HeapBuf"
+    explicit WDL_HeapBuf(int granul=BL_GRANUL, const char *tracetype="WDL_HeapBuf"
       ) : m_buf(NULL), m_alloc(0), m_size(0), m_granul(granul)
     {
       m_tracetype = tracetype;
@@ -352,9 +358,9 @@ template<class PTRTYPE> class WDL_TypedBuf
     }
 
 #ifndef WDL_HEAPBUF_TRACE
-    explicit WDL_TypedBuf(int granul=4096) : m_hb(granul) { }
+    explicit WDL_TypedBuf(int granul=BL_GRANUL) : m_hb(granul) { }
 #else
-    explicit WDL_TypedBuf(int granul=4096, const char *tracetype="WDL_TypedBuf") : m_hb(granul WDL_HEAPBUF_TRACEPARM(tracetype)) { }
+    explicit WDL_TypedBuf(int granul=BL_GRANUL, const char *tracetype="WDL_TypedBuf") : m_hb(granul WDL_HEAPBUF_TRACEPARM(tracetype)) { }
 #endif
     ~WDL_TypedBuf()
     {
