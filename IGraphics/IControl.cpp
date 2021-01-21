@@ -331,6 +331,13 @@ void IControl::SetSize(float w, float h)
   SetTargetAndDrawRECTs({mRECT.L, mRECT.T, mRECT.L + w, mRECT.T + h});
 }
 
+void
+IControl::GetSize(float *w, float *h)
+{
+    *w = mRECT.W();
+    *h = mRECT.H();
+}
+
 IControl* IControl::AttachGestureRecognizer(EGestureType type, IGestureFunc func)
 {
   mGestureFuncs.insert(std::make_pair(type, func));

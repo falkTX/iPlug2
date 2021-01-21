@@ -330,6 +330,9 @@ public:
    * @param h the new height of the control */
   virtual void SetSize(float w, float h);
 
+  // #bluelab
+  void GetSize(float *w, float *h);
+  
   /** Used internally by the AAX wrapper view interface to set the control parmeter highlight 
    * @param isHighlighted /c true if the control should be highlighted 
    * @param color An integer representing one of three colors that ProTools assigns automated controls */
