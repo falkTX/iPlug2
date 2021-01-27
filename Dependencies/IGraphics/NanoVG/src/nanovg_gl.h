@@ -951,13 +951,15 @@ static int glnvg__renderCreateTexture(void* uptr, int type, int w, int h, int st
     }
     else
     {
-#ifndef WIN32 // Apple
+#ifdef  __APPLE__ // Apple
 	    // As it should be: float format, 1 component
 	    glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, w, h, 0, GL_RED, GL_FLOAT, data);
-#else
+#elif (defined WIN32)
 	    // This line is better, no need to call nvgUpdateImage() after nvgCreateImage()
 	    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RED, GL_FLOAT, data);
-#endif // WIN32
+#else // Linux
+	    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RED, GL_FLOAT, data);
+#endif
 	  }
 #endif // BLUELAB_COLORMAP
     

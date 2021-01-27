@@ -1043,6 +1043,7 @@ bool IPluginBase::LoadBankFromFXB(const char* file)
   return false;
 }
 
+#if 0
 bool IPluginBase::LoadPresetFromVSTPreset(const char* path)
 {
   auto isEqualID = [](const ChunkID id1, const ChunkID id2) {
@@ -1149,7 +1150,9 @@ bool IPluginBase::LoadPresetFromVSTPreset(const char* path)
   
   return false;
 }
+#endif
 
+#if 0
 void IPluginBase::MakeVSTPresetChunk(IByteChunk& chunk, IByteChunk& componentState, IByteChunk& controllerState) const
 {
   WDL_String metaInfo("");
@@ -1201,8 +1204,9 @@ void IPluginBase::MakeVSTPresetChunk(IByteChunk& chunk, IByteChunk& componentSta
   int64_t metaInfoSize = metaInfo.GetLength();
   chunk.Put(&metaInfoSize);
 }
+#endif
 
-bool IPluginBase::SavePresetAsVSTPreset(const char* path) const
+/*bool IPluginBase::SavePresetAsVSTPreset(const char* path) const
 {
   if (path)
   {
@@ -1232,5 +1236,5 @@ bool IPluginBase::SavePresetAsVSTPreset(const char* path) const
   
   return false;
 }
-
+*/
 

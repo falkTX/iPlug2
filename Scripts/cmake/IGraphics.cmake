@@ -29,6 +29,7 @@ set(_src
   ${IGRAPHICS_SRC}/IControl.cpp
   ${IGRAPHICS_SRC}/IGraphics.cpp
   ${IGRAPHICS_SRC}/IGraphicsEditorDelegate.cpp
+  ${IGRAPHICS_SRC}/bl_uptime.cpp
   ${IGRAPHICS_SRC}/Controls/IControls.cpp
   ${IGRAPHICS_SRC}/Controls/IPopupMenuControl.cpp
   ${IGRAPHICS_SRC}/Controls/ITextEntryControl.cpp

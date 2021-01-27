@@ -58,6 +58,10 @@ public:
   void CachePlatformFont(const char* fontID, const PlatformFontPtr& font) override { } // No reason to cache (no universal font handle)
   void SetIntegration(void* mainLoop) override;
 
+  // #bluelab
+  // TODO for linux
+  bool GetScreenResolution(int *width, int *height) { return true; };
+  
 protected:
   IPopupMenu* CreatePlatformPopupMenu(IPopupMenu& menu, const IRECT& bounds, bool& isAsync) override { /* NO-OP */ return nullptr; }
   void CreatePlatformTextEntry(int paramIdx, const IText& text, const IRECT& bounds, int length, const char* str) override { /* NO-OP */ } 

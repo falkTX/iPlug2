@@ -15,7 +15,7 @@
 #include "nanosvg.h"
 
 // #bluelab
-#include <UpTime.h>
+#include "bl_uptime.h"
 
 #if defined VST3_API
 #include "pluginterfaces/base/ustring.h"
@@ -1005,7 +1005,7 @@ void IGraphics::OnMouseDown(const std::vector<IMouseInfo>& points)
 //  Trace("IGraphics::OnMouseDown", __LINE__, "x:%0.2f, y:%0.2f, mod:LRSCA: %i%i%i%i%i", x, y, mod.L, mod.R, mod.S, mod.C, mod.A);
 
   // #bluelab
-  mPrevMouseDown = UpTime::GetUpTime();
+  mPrevMouseDown = bl_uptime();
     
   bool singlePoint = points.size() == 1;
   
@@ -1282,7 +1282,7 @@ bool IGraphics::OnMouseDblClick(float x, float y, const IMouseMod& mod)
 
   // #bluelab
   bool dblClickValidated = true;
-  unsigned long long upTime = UpTime::GetUpTime();
+  unsigned long long upTime = bl_uptime();
   unsigned long long dblClickDelay = upTime - mPrevMouseDown;
   mPrevMouseDown = upTime;
   if (dblClickDelay > 250)
