@@ -14,6 +14,11 @@
 #include <memory>
 #include <xcbt.h>
 
+// #bluelab
+// FIX: vst2/vst3: open in Reaper, display the plugin GUI,
+// close the plug window then re-open it => Reaper crashes
+#define BL_FIX_CRASH_REOPEN 1
+
 BEGIN_IPLUG_NAMESPACE
 class Timer;
 
@@ -71,6 +76,9 @@ protected:
 private:
   xcbt mX = NULL;
   xcbt_embed* mEmbed = NULL;
+#if BL_FIX_CRASH_REOPEN
+  bool mOwnEmbed = false;
+#endif
   xcbt_window mPlugWnd = NULL;
   xcbt_window_handler mBaseWindowHandler;
   void* mBaseWindowData;

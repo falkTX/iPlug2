@@ -419,7 +419,12 @@ void IGraphicsLinux::SetIntegration(void* mainLoop)
         // DBGMSG("asked to unset embedding, but X is still active\n"); that in fact how it goes, frame is unset before CloseWindow TODO: check why
         xcbt_embed_set(mX, nullptr);
       }
+#if BL_FIX_CRASH_REOPEN
+      if (mOwnEmbed)
+        xcbt_embed_dtor(mEmbed);
+#else
       xcbt_embed_dtor(mEmbed);
+#endif
       mEmbed = nullptr;
     }
   }
@@ -439,8 +444,12 @@ void* IGraphicsLinux::OpenWindow(void* pParent)
   
 #ifdef APP_API
   if (!mEmbed)
-  {
+  {  
     SetIntegration(xcbt_embed_glib());
+
+#if BL_FIX_CRASH_REOPEN
+    mOwnEmbed = true;
+#endif
   }
 #endif
 
@@ -557,7 +566,13 @@ void IGraphicsLinux::CloseWindow()
 
   if (mEmbed)
   {
+#if BL_FIX_CRASH_REOPEN
+    if (mOwnEmbed)
+      mEmbed->dtor(mEmbed);
+#else
     mEmbed->dtor(mEmbed);
+#endif
+    
     mEmbed = nullptr;
   }
 }
@@ -1074,7 +1089,13 @@ IGraphicsLinux::IGraphicsLinux(IGEditorDelegate& dlg, int w, int h, int fps, flo
 IGraphicsLinux::~IGraphicsLinux()
 {
   CloseWindow();
+
+#if BL_FIX_CRASH_REOPEN
+  if (mOwnEmbed)
+    xcbt_embed_dtor(mEmbed);
+#else
   xcbt_embed_dtor(mEmbed);
+#endif
 }
 
 #ifndef NO_IGRAPHICS

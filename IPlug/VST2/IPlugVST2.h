@@ -23,6 +23,7 @@
 
 #if defined OS_LINUX
 #include "xcbt.h"
+#define BL_FIX_CRASH_REOPEN 1
 #endif
 
 BEGIN_IPLUG_NAMESPACE
@@ -41,6 +42,10 @@ class IPlugVST2 : public IPlugAPIBase
 public:
   IPlugVST2(const InstanceInfo& info, const Config& config);
 
+#if BL_FIX_CRASH_REOPEN
+    virtual ~IPlugVST2();
+#endif
+    
   //IPlugAPIBase
   void BeginInformHostOfParamChange(int idx) override;
   void InformHostOfParamChange(int idx, double normalizedValue) override;

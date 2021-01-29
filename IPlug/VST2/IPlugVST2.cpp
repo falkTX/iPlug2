@@ -167,6 +167,10 @@ IPlugVST2::IPlugVST2(const InstanceInfo& info, const Config& config)
 
   SetBlockSize(DEFAULT_BLOCK_SIZE);
 
+#if BL_FIX_CRASH_REOPEN
+  mEmbed = NULL;
+#endif
+  
   if (config.plugHasUI)
   {
     mAEffect.flags |= effFlagsHasEditor;
@@ -178,6 +182,14 @@ IPlugVST2::IPlugVST2(const InstanceInfo& info, const Config& config)
   
   CreateTimer();
 }
+
+#if BL_FIX_CRASH_REOPEN
+IPlugVST2::~IPlugVST2()
+{
+  if (mEmbed != NULL)
+    mEmbed->dtor(mEmbed);
+}
+#endif
 
 void IPlugVST2::BeginInformHostOfParamChange(int idx)
 {
@@ -489,6 +501,7 @@ VstIntPtr VSTCALLBACK IPlugVST2::VSTDispatcher(AEffect *pEffect, VstInt32 opCode
       if (_this->HasUI())
       {
         _this->CloseWindow();
+        
         return 1;
       }
       return 0;
