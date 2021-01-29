@@ -324,16 +324,21 @@ NVGcontext* nvgCreateInternal(NVGparams* params)
 	fontParams.width = NVG_INIT_FONTIMAGE_SIZE;
 	fontParams.height = NVG_INIT_FONTIMAGE_SIZE;
 
+    // Default
+    fontParams.flags = FONS_ZERO_TOPLEFT;
+    
 #if BLUELAB_CHANGES
-
-#ifndef WIN32
-	fontParams.flags = FONS_ZERO_BOTTOMLEFT;
-#else
-  fontParams.flags = FONS_ZERO_TOPLEFT;
+#ifdef WIN32
+    fontParams.flags = FONS_ZERO_TOPLEFT;
 #endif
 
-#else
-	fontParams.flags = FONS_ZERO_TOPLEFT;
+#ifdef __APPLE__
+    fontParams.flags = FONS_ZERO_BOTTOMLEFT;
+#endif
+
+#ifdef __linux__
+    fontParams.flags = FONS_ZERO_TOPLEFT;
+#endif
 #endif
 	
 	fontParams.renderCreate = NULL;
