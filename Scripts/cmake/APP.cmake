@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 3.11)
 
+
 add_library(iPlug2_APP INTERFACE)
 set(sdk ${IPLUG2_DIR}/IPlug/APP)
 set(_src
@@ -16,8 +17,12 @@ set(_inc
   ${IPLUG_DEPS}/RTAudio/include
   ${IPLUG_DEPS}/RTMidi
   ${IPLUG_DEPS}/RTMidi/include
-)
-set(_def "APP_API" "IPLUG_EDITOR=1" "IPLUG_DSP=1" )
+  )
+
+#bluelab
+#set(_def "APP_API" "IPLUG_EDITOR=1" "IPLUG_DSP=1" )
+set(_def "APP_API" "IPLUG_EDITOR=1" "IPLUG_DSP=1" "PARAMS_MUTEX=1")
+
 
 # Link Windows sound libraies if on Windows
 if (WIN32)
