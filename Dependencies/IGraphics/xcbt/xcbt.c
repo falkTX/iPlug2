@@ -842,6 +842,8 @@ xcbt_window xcbt_window_gl_create(xcbt px, xcb_window_t prt, const xcbt_rect *po
                   XCB_EVENT_MASK_PROPERTY_CHANGE | // useful when something will change our property
                   XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_BUTTON_RELEASE  |  // mouse clicks
                   //XCB_EVENT_MASK_KEY_PRESS | XCB_EVENT_MASK_KEY_RELEASE  |      // keyboard is questionable according to XEMBED
+                  // #bluelab (origin was commented)
+                  XCB_EVENT_MASK_KEY_PRESS | XCB_EVENT_MASK_KEY_RELEASE  |
                   XCB_EVENT_MASK_ENTER_WINDOW   | XCB_EVENT_MASK_LEAVE_WINDOW |   // mouse entering/leaving
                   XCB_EVENT_MASK_POINTER_MOTION // mouse motion
                   ;
@@ -937,6 +939,8 @@ xcbt_window xcbt_window_create(xcbt px, xcb_window_t prt, const xcbt_rect *pos){
                   XCB_EVENT_MASK_PROPERTY_CHANGE | // useful when something will change our property
                   XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_BUTTON_RELEASE  |  // mouse clicks
                   //XCB_EVENT_MASK_KEY_PRESS | XCB_EVENT_MASK_KEY_RELEASE  |      // keyboard is questionable accordung to XEMBED
+                  // #bluelab (original was commented)
+                  XCB_EVENT_MASK_KEY_PRESS | XCB_EVENT_MASK_KEY_RELEASE  |
                   XCB_EVENT_MASK_ENTER_WINDOW   | XCB_EVENT_MASK_LEAVE_WINDOW |   // mouse entering/leaving
                   XCB_EVENT_MASK_POINTER_MOTION // mouse motion
                   ;
@@ -1336,6 +1340,21 @@ static void xcbt_event_process(_xcbt *x, xcb_generic_event_t *evt){
         break;
       }
     // TODO: all events with window in other position
+
+    // #bluelab (added KEY_PRESS and KEY_RELEASE)
+    case XCB_KEY_PRESS:
+    {
+      xcb_key_press_event_t *ke = (xcb_key_press_event_t *)evt;
+      wnd = ke->event;
+    }
+    break;
+    case XCB_KEY_RELEASE:
+    {
+      xcb_key_release_event_t *ke = (xcb_key_release_event_t *)evt;
+      wnd = ke->event;
+    }
+    break;
+    
     default:
       TRACE("NI: Event %d\n", evt->response_type);
       free(evt);

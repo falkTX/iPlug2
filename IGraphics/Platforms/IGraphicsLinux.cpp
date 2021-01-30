@@ -399,6 +399,41 @@ void IGraphicsLinux::WindowHandler(xcb_generic_event_t* evt)
       {
         break;
       }
+
+      // #bluelab
+      case XCB_KEY_PRESS:
+      {
+          xcb_key_press_event_t *ke = (xcb_key_press_event_t *)evt;
+
+          float x = ke->event_x;
+          float y = ke->event_y;
+
+          xcb_keycode_t keycode = ke->detail;
+
+          // #bluelab
+          // TODO: finish it:
+          // - convert codes; vk and utf8,
+          // - manage ctrl+key and other modifiers
+          IKeyPress key(" ", keycode);
+          OnKeyDown(x, y, key);
+      }
+      break;
+      case XCB_KEY_RELEASE:
+      {
+          xcb_key_release_event_t *ke = (xcb_key_release_event_t *)evt;
+
+          float x = ke->event_x;
+          float y = ke->event_y;
+
+          xcb_keycode_t keycode = ke->detail;
+
+          // #bluelab
+          // TODO: finish it
+          IKeyPress key(" ", keycode);
+          OnKeyUp(x, y, key);
+      }
+      break;
+      
       default:
         break;
     }
