@@ -18,6 +18,11 @@
 #include "IPlugVST3_RunLoop.h"
 #endif
 
+// - FIX: with VST3, close the plug ui, re-open it => crash
+// And also when launching under gdb, it detecs an error when setting the timer
+// - NOTE: tested with Gain12, OnIdle() is not called if we define it
+#define BL_FIX_CRASH_REOPEN_VST3 1
+
 /** IPlug VST3 View  */
 template <class T>
 class IPlugVST3View : public Steinberg::CPluginView
@@ -32,7 +37,7 @@ public:
   
   ~IPlugVST3View()
   {
-    mOwner.release();
+      mOwner.release();
   }
   
   IPlugVST3View(const IPlugVST3View&) = delete;
@@ -157,7 +162,9 @@ public:
   { 
   #ifdef OS_LINUX
     auto rloop = iplug::IPlugVST3_RunLoop::Create(frame);
+#if !BL_FIX_CRASH_REOPEN_VST3
     rloop->CreateTimer([&]() { mOwner.OnIdle(); }, 20);
+#endif
     mOwner.SetIntegration(rloop);
   #endif
   
