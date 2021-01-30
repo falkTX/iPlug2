@@ -21,6 +21,9 @@
 #include <codecvt>
 #include <locale>
 
+// FIX: white background , black text!
+#define BL_FIX_HILIGHT_TEXT_ENTRY 1
+
 #ifdef _MSC_VER
 #if (_MSC_VER >= 1900 /* VS 2015*/) && (_MSC_VER < 1920 /* pre VS 2019 */)
 std::locale::id std::codecvt<char16_t, char, _Mbstatet>::id;
@@ -530,7 +533,17 @@ float ITextEntryControl::MeasureCharWidth(char16_t c, char16_t nc)
 void ITextEntryControl::CreateTextEntry(int paramIdx, const IText& text, const IRECT& bounds, int length, const char* str)
 {
   SetTargetAndDrawRECTs(bounds);
+#if !BL_FIX_HILIGHT_TEXT_ENTRY
   SetText(text);
+#else
+  IColor bgColor = mText.mTextEntryBGColor;
+  IColor fgColor = mText.mTextEntryFGColor;
+
+  SetText(text);
+
+  mText.mTextEntryBGColor = bgColor;
+  mText.mTextEntryFGColor = fgColor;
+#endif
   mText.mFGColor = mText.mTextEntryFGColor;
   SetStr(str);
   SelectAll();
