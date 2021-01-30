@@ -1254,7 +1254,7 @@ BOOL  SetMenu(HWND hwnd, HMENU menu)
 
     if (oldmenu) r.bottom -= g_swell_ctheme.menubar_height; // hack: we should WM_NCCALCSIZE before and after, really
     else r.bottom += g_swell_ctheme.menubar_height;
-
+    
     SetWindowPos(hwnd,NULL,0,0,r.right-r.left,r.bottom-r.top,SWP_NOZORDER|SWP_NOMOVE|SWP_NOACTIVATE);
     hwnd->m_wndproc = oldwc;
     // resize

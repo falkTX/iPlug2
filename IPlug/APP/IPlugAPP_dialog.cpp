@@ -26,6 +26,15 @@ using namespace iplug;
 using namespace igraphics;
 #endif
 
+// FIX: On Linux, with App, sometimes the window is resized too small in height
+// (the bottom is cropped)
+// This is while adding the menu, we request to grow the height by 17 pixels
+// and if the window is already shown at this moment, sometimes the system
+// does not resize it
+#ifdef __linux__
+#define BL_FIX_LINUX_APP_WIN_SIZE 1
+#endif
+
 /* Workaround for SWELL on Linux (may be on Mac as well, not checked).
  * CB_RESETCONTENT is not updating ComboBox. In case there was items
  * but it should be cleared now, last selected item stay visible.
@@ -599,13 +608,18 @@ WDL_DLGRET IPlugAPPHost::MainDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPA
 
       width = pPlug->GetEditorWidth();
       height = pPlug->GetEditorHeight();
-
+      
       ClientResize(hwndDlg, width, height);
 #if defined(OS_LINUX)
       SetWindowPos(pAppHost->mSite, hwndDlg, 0, 0, width, height, SWP_NOZORDER);
 #endif
 
+      // Don't worry, on Linux, ShowWindow() will be called just after,
+      // after having added the menu
+#if !BL_FIX_LINUX_APP_WIN_SIZE
       ShowWindow(hwndDlg, SW_SHOW);
+#endif
+      
       return 1;
     }
     case WM_DESTROY:

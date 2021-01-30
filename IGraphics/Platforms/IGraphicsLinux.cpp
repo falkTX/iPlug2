@@ -964,7 +964,7 @@ void IGraphicsLinux::PlatformResize(bool parentHasResized)
     //DBGMSG("INFO: resized to %ux%u\n", values[0], values[1]);
     if (!parentHasResized)
     {
-      DBGMSG("WARNING: parent is not resized, but I (should) have no control on it on X... XEMBED?\n");
+        //DBGMSG("WARNING: parent is not resized, but I (should) have no control on it on X... XEMBED?\n");
       xcb_window_t prt = xcbt_window_xprt(mPlugWnd);
       if (prt)
       {
