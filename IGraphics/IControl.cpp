@@ -267,10 +267,19 @@ void IControl::OnMouseDown(float x, float y, const IMouseMod& mod)
 {
   // #bluelab
   //#ifdef PROTOOLS
+#ifndef __linux__
   if (mod.A)
   {
     SetValueToDefault(GetValIdxForPos(x, y));
   }
+#else
+  // On Linux, Alt+click does nothing (at least on my xubuntu)
+  // So use Ctrl-click instead to reset parameters
+  if (mod.C)
+  {
+    SetValueToDefault(GetValIdxForPos(x, y));
+  }
+#endif
   //#endif
 
   if (mod.R)
