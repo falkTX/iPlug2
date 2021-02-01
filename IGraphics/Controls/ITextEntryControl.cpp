@@ -294,7 +294,10 @@ bool ITextEntryControl::OnKeyDown(float x, float y, const IKeyPress& key)
           case IParam::kTypeInt:
           case IParam::kTypeBool:
           {
-            if (key.VK >= '0' && key.VK <= '9' && !key.S)
+            // #bluelab
+            // We can get digits while hitting shift, it depends on the keyboards
+            //if (key.VK >= '0' && key.VK <= '9' && !key.S)
+            if (key.VK >= '0' && key.VK <= '9')
               break;
             if (key.VK >= kVK_NUMPAD0 && key.VK <= kVK_NUMPAD9)
               break;
@@ -305,11 +308,17 @@ bool ITextEntryControl::OnKeyDown(float x, float y, const IKeyPress& key)
           }
           case IParam::kTypeDouble:
           {
-            if (key.VK >= '0' && key.VK <= '9' && !key.S)
+            // #bluelab
+            // We can get digits while hitting shift, it depends on the keyboards
+            //if (key.VK >= '0' && key.VK <= '9' && !key.S)
+            if (key.VK >= '0' && key.VK <= '9')
               break;
             if (key.VK >= kVK_NUMPAD0 && key.VK <= kVK_NUMPAD9)
               break;
-            if (stbKey == '+' || stbKey == '-' || stbKey == '.')
+            // #bluelab
+            // We need comma instead of period on certain regions
+            //if (stbKey == '+' || stbKey == '-' || stbKey == '.')
+            if (stbKey == '+' || stbKey == '-' || stbKey == '.' || stbKey == ',')
               break;
             stbKey = 0;
             break;

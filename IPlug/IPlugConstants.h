@@ -417,7 +417,10 @@ enum EVirtualKey
   kVK_F24 = 0x87,
 
   kVK_NUMLOCK = 0x90,
-  kVK_SCROLL = 0x91
+  kVK_SCROLL = 0x91,
+
+  // #bluelab
+  kVK_COMMA = 0xBC
 };
 
 END_IPLUG_NAMESPACE

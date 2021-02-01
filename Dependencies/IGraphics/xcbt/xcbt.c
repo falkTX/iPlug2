@@ -2010,11 +2010,17 @@ xcbt_keyboard_get_keysym(xcbt x, xkb_keycode_t keycode, uint16_t modifier)
   if ((modifier & XCB_MOD_MASK_SHIFT) || (modifier & XCB_MOD_MASK_LOCK))
       shift_level = 1;
   
-  
   num_keysyms = xkb_keymap_key_get_syms_by_level(px->keymap, keycode, layout,
-                                                 level, &syms_out);
+                                                 shift_level, &syms_out);
   if (num_keysyms == 0)
+  {
+    // Maybe this is a key that does nothing when shift is pressed
+    // Retry with shift level 0
+    num_keysyms = xkb_keymap_key_get_syms_by_level(px->keymap, keycode, layout,
+                                                   0, &syms_out);
+    if (num_keysyms == 0)
       return keysym;
+  }
   
   keysym = syms_out[0];
   

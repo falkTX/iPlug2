@@ -417,7 +417,12 @@ void IGraphicsLinux::WindowHandler(xcb_generic_event_t* evt)
 
           // Modifiers
           GetKeyModifiers(ke->state, &key.S, &key.C, &key.A);
-          
+
+#if 0 // DEBUG
+          fprintf(stderr, "IKeyPress: %d %s s=%d a=%d c=%d\n",
+                  key.VK, key.utf8, key.S, key.A, key.C);
+#endif
+
           OnKeyDown(x, y, key);
       }
       break;
@@ -508,7 +513,7 @@ void* IGraphicsLinux::OpenWindow(void* pParent)
   mX = xcbt_connect(0);
 #endif
   if (!mX)
-  {
+ {
     return NULL;
   }
 
@@ -1182,6 +1187,15 @@ uint32_t
 IGraphicsLinux::ConvertSpecialKeyToVK(uint32_t keycode, uint16_t modifier)
 {
   xkb_keysym_t keysym = xcbt_keyboard_get_keysym(mX, keycode, modifier);
+
+#if 0 // DEBUG
+    // Keysym name
+    char keysym_name[64];
+    xcbt_keyboard_get_keysym_name(keysym, keysym_name);
+    fprintf(stderr, "keycode: %d keysym %d name: %s\n",
+            keycode, keysym, keysym_name);
+#endif
+    
   switch(keysym)
   {
     case XK_Home: return kVK_HOME;
@@ -1256,13 +1270,19 @@ IGraphicsLinux::ConvertSimpleKeyToVK(uint32_t keycode,
 
     xcbt_keyboard_get_keysym_utf8(keysym, utf8);
 
-#if 1 // DEBUG
+#if 0 // DEBUG
     // Keysym name
     char keysym_name[64];
     xcbt_keyboard_get_keysym_name(keysym, keysym_name);
     fprintf(stderr, "keycode: %d keysym %d utf8: %s name: %s\n",
             keycode, keysym, utf8, keysym_name);
 #endif
+
+    if ((keysym >= XK_a) && (keysym <= XK_z))
+    {
+        uint32_t vk = kVK_A + (keysym - XK_a);
+        return vk;
+    }
     
     if ((keysym >= XK_A) && (keysym <= XK_Z))
     {
@@ -1272,7 +1292,7 @@ IGraphicsLinux::ConvertSimpleKeyToVK(uint32_t keycode,
 
     if ((keysym >= XK_0) && (keysym <= XK_9))
     {
-        uint32_t vk = kVK_0 + (keysym - XK_9);
+        uint32_t vk = kVK_0 + (keysym - XK_0);
         return vk;
     }
 
@@ -1282,7 +1302,7 @@ IGraphicsLinux::ConvertSimpleKeyToVK(uint32_t keycode,
         case XK_plus: return kVK_ADD;
         case XK_minus: return kVK_SUBTRACT;
         case XK_period: return kVK_DECIMAL;
-
+        case XK_comma: return kVK_COMMA;
         // Add your own here if you need other keys...
     }
 
