@@ -410,11 +410,14 @@ void IGraphicsLinux::WindowHandler(xcb_generic_event_t* evt)
 
           xcb_keycode_t keycode = ke->detail;
 
-          // #bluelab
-          // TODO: finish it:
-          // - convert codes; vk and utf8,
-          // - manage ctrl+key and other modifiers
-          IKeyPress key(" ", keycode);
+          char utf8[7];
+          uint32_t vk = ConvertKeyToVK(keycode, ke->state, utf8);
+          
+          IKeyPress key(utf8, vk);
+
+          // Modifiers
+          GetKeyModifiers(ke->state, &key.S, &key.C, &key.A);
+          
           OnKeyDown(x, y, key);
       }
       break;
@@ -427,9 +430,14 @@ void IGraphicsLinux::WindowHandler(xcb_generic_event_t* evt)
 
           xcb_keycode_t keycode = ke->detail;
 
-          // #bluelab
-          // TODO: finish it
-          IKeyPress key(" ", keycode);
+          char utf8[7];
+          uint32_t vk = ConvertKeyToVK(keycode, ke->state, utf8);
+          
+          IKeyPress key(utf8, vk);
+          
+          // Modifiers
+          GetKeyModifiers(ke->state, &key.S, &key.C, &key.A);
+          
           OnKeyUp(x, y, key);
       }
       break;
@@ -1131,6 +1139,154 @@ IGraphicsLinux::~IGraphicsLinux()
 #else
   xcbt_embed_dtor(mEmbed);
 #endif
+}
+
+// #bluelab
+void
+IGraphicsLinux::GetKeyModifiers(uint32_t mask, bool *S, bool *C, bool *A)
+{
+    *S = false;
+    *C = false;
+    *A = false;
+
+    if (mask & XCB_KEY_BUT_MASK_SHIFT)
+        *S = true;
+    
+    if (mask & XCB_KEY_BUT_MASK_CONTROL)
+        *C = true;
+
+    if (mask & XCB_KEY_BUT_MASK_MOD_1)
+        *C = true;
+}
+
+// #bluelab
+//xkb key to VK conversion
+uint32_t
+IGraphicsLinux::ConvertKeyToVK(uint32_t keycode,
+                               uint16_t modifier,
+                               char utf8[7])
+{
+    uint32_t vk;
+    memset(utf8, 0, 7);
+
+    vk = ConvertSpecialKeyToVK(keycode, modifier);
+    if (vk != 0)
+        return vk;
+
+    vk = ConvertSimpleKeyToVK(keycode, modifier, utf8);
+
+    return vk;
+}
+
+uint32_t
+IGraphicsLinux::ConvertSpecialKeyToVK(uint32_t keycode, uint16_t modifier)
+{
+  xkb_keysym_t keysym = xcbt_keyboard_get_keysym(mX, keycode, modifier);
+  switch(keysym)
+  {
+    case XK_Home: return kVK_HOME;
+    case XK_End: return kVK_END;
+    case XK_Up: return kVK_UP;
+    case XK_Down: return kVK_DOWN;
+    case XK_Left: return kVK_LEFT;
+    case XK_Right: return kVK_RIGHT;
+    case XK_Page_Up: return kVK_PRIOR;
+    case XK_Page_Down: return kVK_NEXT;
+    case XK_Insert: return kVK_INSERT;
+    case XK_Delete: return kVK_DELETE;
+    case XK_Escape: return kVK_ESCAPE;
+    case XK_BackSpace: return kVK_BACK;
+    case XK_Return: return kVK_RETURN;
+    case XK_Tab: return kVK_TAB;
+    case XK_F1: return kVK_F1;
+    case XK_F2: return kVK_F2;
+    case XK_F3: return kVK_F3;
+    case XK_F4: return kVK_F4;
+    case XK_F5: return kVK_F5;
+    case XK_F6: return kVK_F6;
+    case XK_F7: return kVK_F7;
+    case XK_F8: return kVK_F8;
+    case XK_F9: return kVK_F9;
+    case XK_F10: return kVK_F10;
+    case XK_F11: return kVK_F11;
+    case XK_F12: return kVK_F12;
+    case XK_KP_0: return kVK_NUMPAD0;
+    case XK_KP_1: return kVK_NUMPAD1;
+    case XK_KP_2: return kVK_NUMPAD2;
+    case XK_KP_3: return kVK_NUMPAD3;
+    case XK_KP_4: return kVK_NUMPAD4;
+    case XK_KP_5: return kVK_NUMPAD5;
+    case XK_KP_6: return kVK_NUMPAD6;
+    case XK_KP_7: return kVK_NUMPAD7;
+    case XK_KP_8: return kVK_NUMPAD8;
+    case XK_KP_9: return kVK_NUMPAD9;
+    case XK_KP_Multiply: return kVK_MULTIPLY;
+    case XK_KP_Add: return kVK_ADD;
+    case XK_KP_Separator: return kVK_SEPARATOR;
+    case XK_KP_Subtract: return kVK_SUBTRACT;
+    case XK_KP_Decimal: return kVK_DECIMAL;
+    case XK_KP_Divide: return kVK_DIVIDE;
+    case XK_Num_Lock: return kVK_NUMLOCK;
+
+    // Modifiers
+    case XK_Shift_L: return kVK_SHIFT;
+    case XK_Shift_R: return kVK_SHIFT;
+    case XK_Control_L: return kVK_CONTROL;
+    case XK_Control_R: return kVK_CONTROL;
+    case XK_Caps_Lock: return kVK_CAPITAL;
+    case XK_Shift_Lock: return kVK_CAPITAL; // ?
+    //case XK_Meta_L:
+    //case XK_Meta_R:
+    //case XK_Alt_L: return kVK_ALT;
+    //case XK_Alt_R: return kVK_ALT;
+    case XK_Super_L: return kVK_LWIN;
+    case XK_Super_R: return kVK_LWIN;
+    case XK_Hyper_L: return kVK_LWIN;
+    case XK_Hyper_R: return kVK_LWIN;
+  }
+  return 0;
+}
+
+uint32_t
+IGraphicsLinux::ConvertSimpleKeyToVK(uint32_t keycode,
+                                     uint16_t modifier,
+                                     char utf8[5])
+{
+    xkb_keysym_t keysym = xcbt_keyboard_get_keysym(mX, keycode, modifier);
+
+    xcbt_keyboard_get_keysym_utf8(keysym, utf8);
+
+#if 1 // DEBUG
+    // Keysym name
+    char keysym_name[64];
+    xcbt_keyboard_get_keysym_name(keysym, keysym_name);
+    fprintf(stderr, "keycode: %d keysym %d utf8: %s name: %s\n",
+            keycode, keysym, utf8, keysym_name);
+#endif
+    
+    if ((keysym >= XK_A) && (keysym <= XK_Z))
+    {
+        uint32_t vk = kVK_A + (keysym - XK_A);
+        return vk;
+    }
+
+    if ((keysym >= XK_0) && (keysym <= XK_9))
+    {
+        uint32_t vk = kVK_0 + (keysym - XK_9);
+        return vk;
+    }
+
+    switch(keysym)
+    {
+        case XK_space: return kVK_SPACE;
+        case XK_plus: return kVK_ADD;
+        case XK_minus: return kVK_SUBTRACT;
+        case XK_period: return kVK_DECIMAL;
+
+        // Add your own here if you need other keys...
+    }
+
+    return 0;
 }
 
 #ifndef NO_IGRAPHICS

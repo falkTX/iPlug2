@@ -29,6 +29,9 @@ extern "C" {
 
 #include <xcb/xcb.h>
 
+// #bluelab
+#include <xkbcommon/xkbcommon.h>
+    
 // it should match defines and common_atom_names in the code
 #define XCBT_COMMON_ATOMS_COUNT 9
 
@@ -535,6 +538,22 @@ xcbt_embed *xcbt_embed_idle();
  */
 void xcbt_embed_idle_cb(xcbt_embed *pe);
 
+// #bluelab
+/**
+ * Get keysym from keycode
+ */
+xkb_keysym_t xcbt_keyboard_get_keysym(xcbt px, xkb_keycode_t keycode, uint16_t modifier);
+
+/**
+ * Get keysym name from keysym
+ */
+void xcbt_keyboard_get_keysym_name(xkb_keysym_t keysym, char keysym_name[64]);
+
+/**
+ * Get utf8 from keysym
+ */
+void xcbt_keyboard_get_keysym_utf8(xkb_keysym_t keysym, char utf8[7]);
+    
 #ifdef __cplusplus
 };
 #endif

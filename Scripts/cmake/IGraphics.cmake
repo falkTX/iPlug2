@@ -49,7 +49,7 @@ elseif (CMAKE_SYSTEM_NAME MATCHES "Linux")
   list(APPEND _inc
     ${IGRAPHICS_DEPS}/xcbt
   )
-  list(APPEND _lib "xcb" "xcb-xfixes" "xcb-icccm" "dl" "fontconfig" "freetype")
+  list(APPEND _lib "xcb" "xcb-xfixes" "xcb-icccm" "xkbcommon" "xkbcommon-x11" "dl" "fontconfig" "freetype")
   set_property(SOURCE ${IGRAPHICS_DEPS}/xcbt/xcbt.c PROPERTY LANGUAGE C)
 
 elseif (CMAKE_SYSTEM_NAME MATCHES "Darwin")

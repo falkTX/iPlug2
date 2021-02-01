@@ -99,6 +99,13 @@ private:
   static uint32_t GetUserDblClickTimeout();
   static void WindowHandlerProxy(xcbt_window xw, xcb_generic_event_t* evt, IGraphicsLinux* pGraphics) { pGraphics->WindowHandler(evt); }
   static void TimerHandlerProxy(xcbt x, int timer_id, IGraphicsLinux* pGraphics) { pGraphics->TimerHandler(timer_id); }
+
+  // #bluelab
+  static void GetKeyModifiers(uint32_t mask, bool *S, bool *C, bool *A);
+
+  uint32_t ConvertKeyToVK(uint32_t keycode, uint16_t modifier, char utf8[7]);
+  uint32_t ConvertSpecialKeyToVK(uint32_t keycode, uint16_t modifier);
+  uint32_t ConvertSimpleKeyToVK(uint32_t keycode, uint16_t modifier, char utf8[7]);
 };
 
 END_IGRAPHICS_NAMESPACE

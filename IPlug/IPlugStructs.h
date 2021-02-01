@@ -612,7 +612,10 @@ struct IPreset
 struct IKeyPress
 {
   int VK; // Windows VK_XXX
-  char utf8[5] = { 0 }; // UTF8 key
+  //char utf8[5] = { 0 }; // UTF8 key
+  // #bluelab
+  // xcb requires a size of 7 at the minimum
+  char utf8[7] = { 0 }; // UTF8 key
   bool S, C, A; // SHIFT / CTRL(WIN) or CMD (MAC) / ALT
 
   /** \todo

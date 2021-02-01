@@ -31,6 +31,9 @@
 #include <xcb/xcb_icccm.h>
 #include <xcb/xfixes.h>
 
+// #bluelab
+#include <xkbcommon/xkbcommon-x11.h>
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -63,6 +66,10 @@
 #else
 #define TRACE(...)
 #endif
+
+// #bluelab
+void xcbt_keyboard_init(xcbt px);
+void xcbt_keyboard_free(xcbt px);
 
 struct _xcbt_window;
 
@@ -158,7 +165,12 @@ typedef struct {
   void    *xlib_xcb; // handle for libX11-xcb.so
   xcb_connection_t *(*XGetXCBConnection)(Display *dpy);
   void (*XSetEventQueueOwner)(Display *dpy, enum XEventQueueOwner owner);
-  
+
+  // #bluelab
+  // keyboard
+  struct xkb_context *ctx;
+  struct xkb_keymap *keymap;
+  struct xkb_state *state;
 } _xcbt;
 
 
@@ -367,6 +379,8 @@ static int32_t xcbt_xcb_window_screen(_xcbt *x, xcb_window_t window){
 void xcbt_disconnect(xcbt px){
   _xcbt *x = (_xcbt *)px;
   if(x){
+    // #bluelab
+    xcbt_keyboard_free((xcbt)x);
     xcbt_embed_set(px, NULL);
     if(!xcb_connection_has_error(x->conn))
       xcbt_sync(px);  // TODO: wait till all known windows get XCB_DESTROY_NOTIFY }
@@ -513,7 +527,6 @@ xcbt xcbt_connect(uint32_t flags){
   x->clipboard_data = NULL;
   x->clipboard_length = 0;
   x->clipboard_owner = 0;
-
   if(x){
     if(flags & XCBT_USE_GL){
       dlerror(); // clear errors
@@ -535,6 +548,8 @@ xcbt xcbt_connect(uint32_t flags){
               if(xcbt_glad_glx_load(x)){
                 if (xcbt_connect_init(x, flags)) {
                   TRACE("INFO: Xlib/XCB FD: %d\n", xcb_get_file_descriptor(x->conn));
+                  // #bluelab
+                  xcbt_keyboard_init((xcbt)x);
                   return (xcbt)x;
                 } else {
                   TRACE("XCBT setup failed\n");
@@ -563,6 +578,8 @@ xcbt xcbt_connect(uint32_t flags){
       TRACE("INFO: XCB only\n");
       xcbt_connect_init(x, flags);
       //TRACE("XCBT %p is Connected\n", x->conn);
+      // #bluelab
+      xcbt_keyboard_init((xcbt)x);
       return (xcbt)x;
     } else {
       TRACE("Could not open X connection\n");
@@ -767,6 +784,7 @@ void xcbt_window_destroy(xcbt_window pxw){
   if(xw){
     Display *dpy = xw->x->dpy;
     xcb_connection_t *conn = xw->x->conn;
+
     if(dpy){
       if(xw->ctx){
         if(glXGetCurrentContext() == xw->ctx){
@@ -1915,4 +1933,104 @@ xcbt_embed *xcbt_embed_idle(){
   ei->embed.set_timer = xcbt_embed_idle_set_timer;
   ei->embed.watch = xcbt_embed_idle_watch;
   return &ei->embed;
+}
+
+// #bluelab
+// See: https://xkbcommon.org/doc/current/md_doc_quick-guide.html
+void
+xcbt_keyboard_init(xcbt x)
+{
+  _xcbt *px = (_xcbt *)x;
+
+  int32_t device_id;
+
+  px->ctx = NULL;
+  px->keymap = NULL;
+  px->state = NULL;
+  
+  px->ctx = xkb_context_new(XKB_CONTEXT_NO_FLAGS);
+  if (!px->ctx)
+      return;
+  
+  device_id = xkb_x11_get_core_keyboard_device_id(px->conn);
+  if (device_id == -1)
+      return;
+  
+  px->keymap = xkb_x11_keymap_new_from_device(px->ctx,
+                                              px->conn,
+                                              device_id,
+                                              XKB_KEYMAP_COMPILE_NO_FLAGS);
+  if (!px->keymap)
+      return;
+  
+  px->state = xkb_state_new(px->keymap);
+  if (px->state == NULL)
+      // Error
+      return;
+}
+
+void
+xcbt_keyboard_free(xcbt x)
+{
+  _xcbt *px = (_xcbt *)x;
+    
+  if (px->state != NULL)
+    xkb_state_unref(px->state);
+  px->state = NULL;
+ 
+  if (px->keymap != NULL)
+    xkb_keymap_unref(px->keymap);
+  px->keymap = NULL;
+ 
+  if (px->ctx != NULL)
+    //free(px->ctx);
+    xkb_context_unref(px->ctx);
+  px->ctx = NULL;
+}
+    
+// Get keysym from keycode
+xkb_keysym_t
+xcbt_keyboard_get_keysym(xcbt x, xkb_keycode_t keycode, uint16_t modifier)
+{
+  _xcbt *px = (_xcbt *)x;
+    
+  xkb_keysym_t keysym = XKB_KEY_NoSymbol;
+  xkb_layout_index_t layout = 0;
+  xkb_level_index_t shift_level = 0;
+  const xkb_keysym_t *syms_out;
+  int num_keysyms;
+  
+  if (px->state == NULL)
+    return keysym;
+   
+  // The following doesn't seem to work, it returns 0 whenever shift is pressed or not
+  // So we need to use the modifier from the key event instead.
+  //xkb_level_index_t shift_level = xkb_state_key_get_level(px->state, keycode, layout);
+
+  if ((modifier & XCB_MOD_MASK_SHIFT) || (modifier & XCB_MOD_MASK_LOCK))
+      shift_level = 1;
+  
+  
+  num_keysyms = xkb_keymap_key_get_syms_by_level(px->keymap, keycode, layout,
+                                                 level, &syms_out);
+  if (num_keysyms == 0)
+      return keysym;
+  
+  keysym = syms_out[0];
+  
+  return keysym;
+}
+
+// Get keysym name from keysym
+void
+xcbt_keyboard_get_keysym_name(xkb_keysym_t keysym, char keysym_name[64])
+{
+    xkb_keysym_get_name(keysym, keysym_name, 64);
+}
+
+// Get utf8 from keysym
+void
+xcbt_keyboard_get_keysym_utf8(xkb_keysym_t keysym, char utf8[7])
+{
+  xkb_keysym_to_utf8(keysym, utf8, 7);
 }
