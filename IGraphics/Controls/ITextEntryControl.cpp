@@ -315,11 +315,13 @@ bool ITextEntryControl::OnKeyDown(float x, float y, const IKeyPress& key)
               break;
             if (key.VK >= kVK_NUMPAD0 && key.VK <= kVK_NUMPAD9)
               break;
+            if (stbKey == '+' || stbKey == '-' || stbKey == '.')
+                break;
             // #bluelab
             // We need comma instead of period on certain regions
+            // NOTE: no need, if we use setlocale(LC_ALL, "C") at plug init.
             //if (stbKey == '+' || stbKey == '-' || stbKey == '.')
-            if (stbKey == '+' || stbKey == '-' || stbKey == '.' || stbKey == ',')
-              break;
+            //break;
             stbKey = 0;
             break;
           }
