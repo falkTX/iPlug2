@@ -314,7 +314,7 @@ endif()
 
 # Set certain compiler flags, specifically errors if there are undefined symbols
 if ((CMAKE_CXX_COMPILER_ID MATCHES "Clang") OR (CMAKE_CXX_COMPILER_ID MATCHES "GNU"))
-  list(APPEND _opts "-Wl,--no-undefined")
+  list(APPEND _opts "-Wl,--no-undefined" "-Wno-write-strings")
 endif()
 
 # Use advanced SIMD instructions when available.
