@@ -91,7 +91,9 @@ function(iplug_configure_vst2 target)
     set(res_dir "${CMAKE_BINARY_DIR}/${PLUG_NAME}.vst2/resources")
 
     add_custom_command(TARGET ${target} POST_BUILD
-      COMMAND ${CMAKE_COMMAND} ARGS "-E" "copy_directory" "${out_dir}" "${VST2_INSTALL_PATH}/${PLUG_NAME}")
+      #bluelab: FIX: fixes ".vst2" suffix at end of plug directory in home/.vst
+      #COMMAND ${CMAKE_COMMAND} ARGS "-E" "copy_directory" "${out_dir}" "${VST2_INSTALL_PATH}/${PLUG_NAME}")
+      COMMAND ${CMAKE_COMMAND} ARGS "-E" "copy_directory" "${out_dir}" "${VST2_INSTALL_PATH}/${PLUG_NAME}.vst2")
   endif()
 
   # Handle resources
