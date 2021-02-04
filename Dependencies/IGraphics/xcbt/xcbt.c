@@ -898,7 +898,7 @@ xcbt_window xcbt_window_top_create(xcbt px, int screen, const char *title, const
     XCB_EVENT_MASK_STRUCTURE_NOTIFY | // get varius notification messages like configure, reparent, etc.
     XCB_EVENT_MASK_PROPERTY_CHANGE | // useful when something will change our property
     XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_BUTTON_RELEASE  |  // mouse clicks
-    XCB_EVENT_MASK_KEY_PRESS | XCB_EVENT_MASK_KEY_RELEASE  |      // keyboard is questionable accordung to XEMBED
+    XCB_EVENT_MASK_KEY_PRESS | XCB_EVENT_MASK_KEY_RELEASE  |      // keyboard is questionable according to XEMBED
     XCB_EVENT_MASK_ENTER_WINDOW   | XCB_EVENT_MASK_LEAVE_WINDOW |   // mouse entering/leaving
     XCB_EVENT_MASK_POINTER_MOTION // mouse motion
     ;
