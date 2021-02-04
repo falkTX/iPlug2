@@ -29,6 +29,11 @@
 
 #define NOT_IMPLEMENTED printf("%s: not implemented\n", __FUNCTION__);
 
+// Use another format for file filters
+// to be able to use all the filters at the same time
+// (and not choose for example only ".wav", then only ".aif" etc.)
+#define BL_FILE_FILTER_PATCH 1
+
 using namespace iplug;
 using namespace igraphics;
 
@@ -841,6 +846,9 @@ void IGraphicsLinux::PromptForFile(WDL_String& fileName, WDL_String& path, EFile
     args.AppendFormatted(fileName.GetLength() + 20, "\"--filename=%s\" ", fileName.Get());
   }
 
+  // NOTE: maybe ther is a bug here, infinite loop due to "," note removed
+  // after processing
+#if !BL_FILE_FILTER_PATCH
   if (extensions)
   {
     // Split the string at commas and then append each format specifier
@@ -856,6 +864,10 @@ void IGraphicsLinux::PromptForFile(WDL_String& fileName, WDL_String& path, EFile
         ext++;
     }
   }
+#else
+  if (extensions)
+      args.AppendFormatted(256, "--file-filter=\"%s\" ",  extensions);
+#endif
   
   WDL_String sStdout;
   WDL_String sStdin;
@@ -869,7 +881,14 @@ void IGraphicsLinux::PromptForFile(WDL_String& fileName, WDL_String& path, EFile
 
   if (status == 0)
   {
-    fileName.Set(sStdout.Get()); 
+    fileName.Set(sStdout.Get());
+
+#if BL_FILE_FILTER_PATCH
+    // Suppress the '\n' at the end of the filename
+    // (later this won't open the file otherwise)
+    if (fileName.GetLength() >= 1)
+        fileName.SetLen(fileName.GetLength() - 1);
+#endif
   }
   else
   {
