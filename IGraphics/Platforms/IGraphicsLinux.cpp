@@ -228,6 +228,13 @@ inline IMouseInfo IGraphicsLinux::GetMouseInfoDeltas(float& dX, float& dY, int16
 
 void IGraphicsLinux::TimerHandler(int timerID)
 {
+  // #bluelab
+  // Windows may have just been destroyed
+  if (mClosing || (mPlugWnd == NULL))
+    return;
+
+  mTimerProcessing = true;
+
   if (timerID == IPLUG_TIMER_ID)
   {
     IRECTList rects;
@@ -238,12 +245,13 @@ void IGraphicsLinux::TimerHandler(int timerID)
     }
     xcbt_timer_set(mX, IPLUG_TIMER_ID, 6, (xcbt_timer_cb) TimerHandlerProxy, this);
   }
+
+  mTimerProcessing = false;
 }
 
 void IGraphicsLinux::WindowHandler(xcb_generic_event_t* evt)
 {
   static struct timeval pt = {0}, ct;
-
   if (!evt)
   {
     mBaseWindowHandler(mPlugWnd, NULL, mBaseWindowData);
@@ -618,10 +626,32 @@ void* IGraphicsLinux::OpenWindow(void* pParent)
 
 void IGraphicsLinux::CloseWindow()
 {
+  // #blulab
+  mClosing = true;
+
+  // Ensure the timer processing is finished
+  // (this should nop happen, this is just in case)
+  while(mTimerProcessing)
+    usleep(1000);
+
   if (mPlugWnd)
   {
+    // #bluelab
+    // Be sure we bind GL context before calling OnViewDestroyed()
+    // because OnViewDestroyed() uses NanoVg calls to destroy NanoVg stuff
+    // FIX: this fixes if we have 2 GL plugins in a DAW, we close one plugin window
+    // and that made the second plugin display to freeze 
+#ifdef IGRAPHICS_GL
+    ActivateGLContext();
+#endif
+    
     OnViewDestroyed();
 
+    // #bluelab
+#ifdef IGRAPHICS_GL
+    DeactivateGLContext();
+#endif
+    
     SetPlatformContext(nullptr);
 
     xcbt_window_destroy(mPlugWnd);
@@ -641,6 +671,8 @@ void IGraphicsLinux::CloseWindow()
     
     mEmbed = nullptr;
   }
+
+  mClosing = false;
 }
 
 void IGraphicsLinux::GetMouseLocation(float& x, float& y) const
@@ -1164,6 +1196,9 @@ uint32_t IGraphicsLinux::GetUserDblClickTimeout()
 IGraphicsLinux::IGraphicsLinux(IGEditorDelegate& dlg, int w, int h, int fps, float scale)
   : IGRAPHICS_DRAW_CLASS(dlg, w, h, fps, scale)
 {
+  // #bluelab
+  mClosing = false;;
+  mTimerProcessing = false;
 }
 
 IGraphicsLinux::~IGraphicsLinux()
@@ -1176,6 +1211,19 @@ IGraphicsLinux::~IGraphicsLinux()
 #else
   xcbt_embed_dtor(mEmbed);
 #endif
+}
+
+// #bluelab
+void
+IGraphicsLinux::ActivateGLContext()
+{
+  xcbt_window_draw_begin(mPlugWnd);
+}
+
+void
+IGraphicsLinux::DeactivateGLContext()
+{
+  xcbt_window_draw_end(mPlugWnd);
 }
 
 // #bluelab

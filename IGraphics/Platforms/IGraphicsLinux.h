@@ -73,6 +73,12 @@ protected:
 
   friend class IGraphics;
 private:
+  // #bluelab
+#ifdef IGRAPHICS_GL
+  void ActivateGLContext() override;
+  void DeactivateGLContext() override;
+#endif
+  
   xcbt mX = NULL;
   xcbt_embed* mEmbed = NULL;
 #if BL_FIX_CRASH_REOPEN
@@ -105,6 +111,11 @@ private:
   uint32_t ConvertKeyToVK(uint32_t keycode, uint16_t modifier, char utf8[7]);
   uint32_t ConvertSpecialKeyToVK(uint32_t keycode, uint16_t modifier);
   uint32_t ConvertSimpleKeyToVK(uint32_t keycode, uint16_t modifier, char utf8[7]);
+
+  // #bluelab
+  // Avoid conflicts between timer and window close ath the same time
+  bool mClosing;
+  bool mTimerProcessing;
 };
 
 END_IGRAPHICS_NAMESPACE
