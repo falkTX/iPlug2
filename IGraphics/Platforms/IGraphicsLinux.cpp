@@ -490,6 +490,19 @@ void IGraphicsLinux::SetIntegration(void* mainLoop)
   }
 }
 
+bool
+IGraphicsLinux::GetScreenResolution(int *width, int *height)
+{
+    xcb_screen_t* si = xcbt_screen_info(mX, xcbt_default_screen(mX));
+    if (si == NULL)
+        return false;
+    
+    *width = si->width_in_pixels;
+    *height = si->height_in_pixels;
+    
+    return true;
+};
+
 void* IGraphicsLinux::OpenWindow(void* pParent)
 {
   xcbt_rect r = {0, 0, static_cast<int16_t>(WindowWidth()), static_cast<int16_t>(WindowHeight())};

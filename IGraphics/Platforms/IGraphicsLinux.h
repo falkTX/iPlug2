@@ -64,8 +64,7 @@ public:
   void SetIntegration(void* mainLoop) override;
 
   // #bluelab
-  // TODO for linux
-  bool GetScreenResolution(int *width, int *height) { return true; };
+  bool GetScreenResolution(int *width, int *height);
   
 protected:
   IPopupMenu* CreatePlatformPopupMenu(IPopupMenu& menu, const IRECT& bounds, bool& isAsync) override { /* NO-OP */ return nullptr; }
