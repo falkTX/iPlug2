@@ -119,7 +119,7 @@ public:
 
   void loop()
   {
-    printf("iPlug2Loop started\n");
+      //printf("iPlug2Loop started\n");
 #ifdef OS_LINUX
     int err = pthread_setname_np(pthread_self(), "iPlug2Loop");
 #endif
@@ -200,7 +200,7 @@ public:
         mSignalCond.wait_until(lck, until);
       }
     } // end while(mRunning.load())
-    printf("iPlug2Loop ended\n");
+    //printf("iPlug2Loop ended\n");
   }
 
   std::thread* mThread;
