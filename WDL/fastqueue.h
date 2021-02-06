@@ -217,5 +217,37 @@ private:
   int m_maxemptieskeep;
 } WDL_FIXALIGN;
 
+// #bluelab
+template <class T> class WDL_TypedFastQueue
+{
+public:
+    WDL_TypedFastQueue(int bsize=65536-64, int maxemptieskeep=-1)
+  : m_q(bsize, maxemptieskeep) {}
+
+  ~WDL_TypedFastQueue() {}
+
+  T *Add(const T *buf, int len) { return (T *)m_q.Add((void *)buf, len*sizeof(T)); }
+
+  void Clear(int limitmaxempties=-1) { m_q.Clear(limitmaxempties); }
+
+  void Advance(int cnt) { m_q.Advance(cnt*sizeof(T)); }
+
+  int Available() const { return m_q.Available()/sizeof(T); }
+
+  int GetPtr(int offset, T **buf) const
+  { int p = m_q.GetPtr(offset*sizeof(T), (void **)buf);
+    return p/sizeof(T); }
+
+  int SetFromBuf(int offs, T *buf, int len)
+  { int p = m_q.SetFromBuf(offs/sizeof(T), (void *)buf, len/sizeof(T));
+    return p/sizeof(T); }
+
+  int GetToBuf(int offs, T *buf, int len) const
+  { int p = m_q.GetToBuf(offs*sizeof(T), (void *)buf, len*sizeof(T));
+    return p/sizeof(T); }
+        
+private:
+  WDL_FastQueue m_q;
+};
 
 #endif //_WDL_FASTQUEUE_H_
