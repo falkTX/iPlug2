@@ -222,13 +222,13 @@ template <class T> class WDL_TypedFastQueue
 {
 public:
     WDL_TypedFastQueue(int bsize=65536-64, int maxemptieskeep=-1)
-  : m_q(bsize, maxemptieskeep) {}
+    : m_q(bsize, maxemptieskeep*sizeof(T)) {}
 
   ~WDL_TypedFastQueue() {}
 
   T *Add(const T *buf, int len) { return (T *)m_q.Add((void *)buf, len*sizeof(T)); }
 
-  void Clear(int limitmaxempties=-1) { m_q.Clear(limitmaxempties); }
+  void Clear(int limitmaxempties=-1) { m_q.Clear(limitmaxempties*sizeof(T)); }
 
   void Advance(int cnt) { m_q.Advance(cnt*sizeof(T)); }
 
@@ -239,7 +239,7 @@ public:
     return p/sizeof(T); }
 
   int SetFromBuf(int offs, T *buf, int len)
-  { int p = m_q.SetFromBuf(offs/sizeof(T), (void *)buf, len/sizeof(T));
+  { int p = m_q.SetFromBuf(offs*sizeof(T), (void *)buf, len*sizeof(T));
     return p/sizeof(T); }
 
   int GetToBuf(int offs, T *buf, int len) const
