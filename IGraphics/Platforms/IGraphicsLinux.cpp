@@ -243,7 +243,12 @@ void IGraphicsLinux::TimerHandler(int timerID)
       Paint();
       SetAllControlsClean();
     }
-    xcbt_timer_set(mX, IPLUG_TIMER_ID, 6, (xcbt_timer_cb) TimerHandlerProxy, this);
+    // #bluelab
+    //int msec = 6;
+    int fps = FPS();
+    int msec = (int)(1000.0/fps);
+    
+    xcbt_timer_set(mX, IPLUG_TIMER_ID, msec, (xcbt_timer_cb) TimerHandlerProxy, this);
   }
 
   mTimerProcessing = false;
