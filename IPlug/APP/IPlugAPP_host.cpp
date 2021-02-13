@@ -148,7 +148,9 @@ bool IPlugAPPHost::InitState()
 
     if(!result_code)
     {
-      mINIPath.Append("\\settings.ini");
+      // #bluelab FIX: fixes asking twice the popup menu "check your settings"
+      //mINIPath.Append("\\settings.ini");
+      mINIPath.Append("settings.ini");
       UpdateINI(); // will write file if doesn't exist
     }
     else
