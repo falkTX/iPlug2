@@ -16,7 +16,7 @@
 #include "IPlugPlatform.h"
 #include "IPlugAPP_host.h"
 
-#include "bl_config.h"
+#include "config.h"
 #include "resource.h"
 
 using namespace iplug;

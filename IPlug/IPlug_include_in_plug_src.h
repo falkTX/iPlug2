@@ -209,7 +209,7 @@
 #pragma mark - WEB
 #elif defined WEB_API
 #include <memory>
-#include "bl_config.h"
+#include "config.h"
   std::unique_ptr<iplug::IPlugWeb> gPlug;
   extern void StartMainLoopTimer();
 

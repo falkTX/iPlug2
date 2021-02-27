@@ -20,7 +20,7 @@ find_package(iPlug2 REQUIRED COMPONENTS APP VST2 VST3 AU)
 
 set(dir "${CMAKE_SOURCE_DIR}")
 set(SRC_FILES
-  "${dir}/bl_config.h"
+  "${dir}/config.h"
   "${dir}/IPlugControls.h"
   "${dir}/IPlugControls.cpp"
 )
