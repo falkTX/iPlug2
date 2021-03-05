@@ -26,6 +26,13 @@ using namespace iplug;
 using namespace igraphics;
 #endif
 
+// #bluelab
+// For OnDrop()
+#if defined OS_LINUX && !defined NO_IGRAPHICS
+#include "IGraphics.h"
+using namespace igraphics;
+#endif
+
 // FIX: On Linux, with App, sometimes the window is resized too small in height
 // (the bottom is cropped)
 // This is while adding the menu, we request to grow the height by 17 pixels
@@ -808,6 +815,33 @@ WDL_DLGRET IPlugAPPHost::MainDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPA
         return 0;
       }
     }
+
+    // #bluelab
+    // Maybe this should be implemented in xcbt instead...
+#ifdef OS_LINUX
+    case WM_DROPFILES:
+    {
+      fprintf(stderr, "IPlugAPP_dialog.cpp:WM_DROPFILED\n");
+
+      IPlugAPP* pPlug = pAppHost->GetPlug();
+      //IGEditorDelegate* pPlug = dynamic_cast<IGEditorDelegate*>(pAppHost->GetPlug());
+      if(pPlug)
+      {
+        IGraphics* pGraphics = pPlug->GetUI();
+
+        HDROP hdrop = (HDROP)wParam;
+      
+        char pathToFile[1025];
+        DragQueryFile(hdrop, 0, pathToFile, 1024);
+      
+        POINT point;
+        DragQueryPoint(hdrop, &point);
+        
+        pGraphics->OnDrop(pathToFile, point.x, point.y);
+      }
+    }
+    break;
+#endif;
   }
   return 0;
 }
