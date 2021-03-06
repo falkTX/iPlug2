@@ -766,9 +766,8 @@ WDL_DLGRET IPlugAPPHost::MainDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPA
         default:
         {
             IPlugAPP* pPlug = pAppHost->GetPlug();
-            
             pPlug->OnHostRequestingMenuAction(LOWORD(wParam));
-            
+   
             return 0;
         }
       }
