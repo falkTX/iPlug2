@@ -15,8 +15,11 @@
 #ifdef OS_WIN
 #include "asio.h"
 #define GET_MENU() GetMenu(gHWND)
-#elif defined OS_MAC || defined OS_LINUX
+//#elif defined OS_MAC || defined OS_LINUX
+#elif defined OS_MAC
 #define GET_MENU() SWELL_GetCurrentMenu()
+#elif defined OS_LINUX
+#define GET_MENU()  GetMenu(hwndDlg)
 #endif
 
 using namespace iplug;
