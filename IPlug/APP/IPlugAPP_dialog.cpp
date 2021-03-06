@@ -661,7 +661,7 @@ WDL_DLGRET IPlugAPPHost::MainDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPA
           if (pluginOpensAboutBox == false)
           {
             WDL_String info;
-            info.Append(PLUG_COPYRIGHT_STR"\nBuilt on " __DATE__);
+            info.Append(PLUG_COPYRIGHT_STR"\nVersion: "PLUG_VERSION_STR"\nBuilt on " __DATE__);
             MessageBox(hwndDlg, info.Get(), PLUG_NAME, MB_OK);
           }
 
@@ -762,6 +762,15 @@ WDL_DLGRET IPlugAPPHost::MainDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPA
           return 0;
         }
 #endif
+      
+        default:
+        {
+            IPlugAPP* pPlug = pAppHost->GetPlug();
+            
+            pPlug->OnHostRequestingMenuAction(LOWORD(wParam));
+            
+            return 0;
+        }
       }
       return 0;
     case WM_GETMINMAXINFO:
