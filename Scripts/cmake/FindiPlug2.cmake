@@ -238,6 +238,7 @@ add_library(iPlug2_Core INTERFACE)
 
 # Make sure we define DEBUG for debug builds
 set(_def "NOMINMAX" "$<$<CONFIG:Debug>:DEBUG>")
+set(_def "NOMINMAX" "$<$<CONFIG:Debug>:_DEBUG>") #bluelab
 set(_opts "")
 set(_lib "")
 set(_inc
