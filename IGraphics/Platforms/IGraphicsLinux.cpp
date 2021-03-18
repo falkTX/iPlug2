@@ -514,7 +514,7 @@ IGraphicsLinux::GetScreenResolution(int *width, int *height)
     *height = si->height_in_pixels;
     
     return true;
-};
+}
 
 void* IGraphicsLinux::OpenWindow(void* pParent)
 {

@@ -553,6 +553,12 @@ void xcbt_keyboard_get_keysym_name(xkb_keysym_t keysym, char keysym_name[64]);
  * Get utf8 from keysym
  */
 void xcbt_keyboard_get_keysym_utf8(xkb_keysym_t keysym, char utf8[7]);
+
+// #bluelab NOTE: it doesn't work... tried wit IPlugAPP
+/**
+ * Change window title
+ */
+void xcbt_window_set_title(xcbt_window pxw, const char *title);
     
 #ifdef __cplusplus
 };

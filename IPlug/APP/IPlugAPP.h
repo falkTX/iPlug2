@@ -55,6 +55,10 @@ public:
   //IPlugAPP
   void AppProcess(double** inputs, double** outputs, int nFrames);
 
+  // #bluelab
+  // NOTE sure at all it is good to be set here ... :(
+  void SetWindowTitle(const char *title);
+    
 private:
   IPlugAPPHost* mAppHost = nullptr;
   IPlugQueue<IMidiMsg> mMidiMsgsFromCallback {MIDI_TRANSFER_SIZE};

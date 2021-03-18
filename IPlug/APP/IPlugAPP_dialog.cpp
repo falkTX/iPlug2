@@ -590,6 +590,14 @@ static void ClientResize(HWND hWnd, int nWidth, int nHeight)
 extern int GetScaleForHWND(HWND hWnd);
 #endif
 
+// #bluelab
+void
+IPlugAPPHost::SetWindowTitle(const char *title)
+{
+    if (gHWND != NULL)
+        SetWindowText(gHWND, title);
+}
+
 //static
 WDL_DLGRET IPlugAPPHost::MainDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
@@ -623,7 +631,7 @@ WDL_DLGRET IPlugAPPHost::MainDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPA
 #if defined(OS_LINUX)
       SetWindowPos(pAppHost->mSite, hwndDlg, 0, 0, width, height, SWP_NOZORDER);
 #endif
-
+      
       // Don't worry, on Linux, ShowWindow() will be called just after,
       // after having added the menu
 #if !BL_FIX_LINUX_APP_WIN_SIZE

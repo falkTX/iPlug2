@@ -173,3 +173,10 @@ void IPlugAPP::AppProcess(double** inputs, double** outputs, int nFrames)
   ProcessBuffers(0.0, GetBlockSize());
   LEAVE_PARAMS_MUTEX
 }
+
+void
+IPlugAPP::SetWindowTitle(const char *title)
+{
+    if (mAppHost != NULL)
+        mAppHost->SetWindowTitle(title);
+}

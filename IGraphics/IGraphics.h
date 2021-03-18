@@ -974,7 +974,7 @@ public:
 
   // #bluelab
   virtual bool GetScreenResolution(int *width, int *height) = 0;
-  
+    
   /** Called repeatedly at frame rate by the platform class to check what the graphics context says is dirty.
    * @param rects The rectangular regions which will be added to to mark what is dirty in the context
    * @return /c true if a control is dirty */

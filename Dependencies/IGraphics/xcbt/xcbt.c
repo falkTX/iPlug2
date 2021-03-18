@@ -927,6 +927,7 @@ xcbt_window xcbt_window_top_create(xcbt px, int screen, const char *title, const
       xcb_change_property(x->conn, XCB_PROP_MODE_REPLACE, xw->wnd, XCB_ATOM_WM_NAME, XCB_ATOM_STRING, 8, strlen(title), title);
       xcb_change_property(x->conn, XCB_PROP_MODE_REPLACE, xw->wnd, XCB_ATOM_WM_ICON_NAME, XCB_ATOM_STRING, 8, strlen(title), title);
     }
+        
     // TODO: WM_TAKE_FOCUS and _NET staff
     wm_protocols[0] = XCBT_WM_DELETE_WINDOW(x);
     xcb_change_property(x->conn, XCB_PROP_MODE_REPLACE, xw->wnd, XCBT_WM_PROTOCOLS(x), XCB_ATOM_ATOM, 32, 1, wm_protocols);
@@ -2039,4 +2040,20 @@ void
 xcbt_keyboard_get_keysym_utf8(xkb_keysym_t keysym, char utf8[7])
 {
   xkb_keysym_to_utf8(keysym, utf8, 7);
+}
+
+// Set window title
+void
+xcbt_window_set_title(xcbt_window pxw, const char *title)
+{
+  _xcbt_window *xw = (_xcbt_window*)pxw;
+  _xcbt *x = xw->x;
+  
+  if (title)
+  {
+    xcb_change_property(x->conn, XCB_PROP_MODE_REPLACE, xw->wnd, XCB_ATOM_WM_NAME, XCB_ATOM_STRING, 8, strlen(title), title);
+    xcb_change_property(x->conn, XCB_PROP_MODE_REPLACE, xw->wnd, XCB_ATOM_WM_ICON_NAME, XCB_ATOM_STRING, 8, strlen(title), title);
+    
+    xcbt_flush(x);
+  }
 }
