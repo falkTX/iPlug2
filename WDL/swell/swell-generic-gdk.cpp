@@ -1073,13 +1073,28 @@ static void OnMotionEvent(GdkEventMotion *m)
   swell_lastMessagePos = MAKELONG(((int)m->x_root&0xffff),((int)m->y_root&0xffff));
   POINT p={(int)m->x, (int)m->y};
   HWND hwnd = getMouseTarget(m->window,p,NULL);
-
   if (hwnd)
   {
     POINT p2={(int)m->x_root, (int)m->y_root};
     ScreenToClient(hwnd, &p2);
     if (hwnd) hwnd->Retain();
     SendMouseMessage(hwnd, WM_MOUSEMOVE, 0, MAKELPARAM(p2.x, p2.y));
+    if (hwnd) hwnd->Release();
+  }
+}
+
+// #bluelab
+static void OnLeaveEvent(GdkEventMotion *m)
+{
+  swell_lastMessagePos = MAKELONG(((int)m->x_root&0xffff),((int)m->y_root&0xffff));
+  POINT p={(int)m->x, (int)m->y};
+  HWND hwnd = getMouseTarget(m->window,p,NULL);
+  if (hwnd)
+  {
+    POINT p2={(int)m->x_root, (int)m->y_root};
+    ScreenToClient(hwnd, &p2);
+    if (hwnd) hwnd->Retain();
+    SendMouseMessage(hwnd, WM_MOUSELEAVE, 0, MAKELPARAM(p2.x, p2.y));
     if (hwnd) hwnd->Release();
   }
 }
@@ -1519,6 +1534,10 @@ static void swell_gdkEventHandler(GdkEvent *evt, gpointer data)
       gdk_event_request_motions((GdkEventMotion *)evt);
       OnMotionEvent((GdkEventMotion *)evt);
     break;
+    // #blulab
+    case GDK_LEAVE_NOTIFY:
+      OnLeaveEvent((GdkEventMotion *)evt);
+    break;  
     case GDK_SCROLL:
       OnScrollEvent((GdkEventScroll*)evt);
     break;

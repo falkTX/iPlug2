@@ -1115,6 +1115,18 @@ static LRESULT WINAPI submenuWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM
         else DestroyWindow(hwnd);
       }
     return 0;
+    // #bluelab
+    case WM_MOUSELEAVE:
+      {
+        // Close the submenu if the mouse leaves it
+        // (avoid having the submenu still open if we don't choose anything,
+        // and move the mouse to do something else)
+        //
+        // NOTE: a better thing to do would be to close it if we left click anywhere
+        // (on the submenu, or somewhere else)
+        DestroyWindow(hwnd);
+      }
+      return 0;
   }
   return DefWindowProc(hwnd,uMsg,wParam,lParam);
 }

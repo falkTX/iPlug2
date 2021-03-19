@@ -1013,6 +1013,8 @@ __attribute__ ((visibility ("default"))) BOOL WINAPI DllMain(HINSTANCE hInstDLL,
 #define WM_CAPTURECHANGED               0x0215
 #define WM_DROPFILES                    0x0233
 #define WM_USER                         0x0400
+// #bluelab
+#define WM_MOUSELEAVE                   0x02A3
 
 #define HTCAPTION 2
 #define HTBOTTOMRIGHT 17
