@@ -1437,7 +1437,7 @@ public:
 
   /** Calls SetDirty() on every control */
   void SetAllControlsDirty();
-  
+
   /** Calls SetClean() on every control */
   void SetAllControlsClean();
     

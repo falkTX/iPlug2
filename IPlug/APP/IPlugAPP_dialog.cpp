@@ -860,7 +860,7 @@ WDL_DLGRET IPlugAPPHost::MainDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPA
       }
     }
     break;
-#endif;
+#endif
   }
   return 0;
 }

@@ -461,7 +461,8 @@ bool IPlugAPPHost::TryToChangeAudio()
   }
 
   if (failedToFindDevice)
-    MessageBox(gHWND, "Please check your soundcard settings in Preferences", "Error", MB_OK);
+      //MessageBox(gHWND, "Please check your soundcard settings in Preferences", "Error", MB_OK);
+      MessageBox(gHWND, "Please check your soundcard settings in Edit->Audio Settings", "Error", MB_OK);
 
   if (inputID != -1 && outputID != -1)
   {
