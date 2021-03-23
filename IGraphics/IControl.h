@@ -1975,7 +1975,11 @@ public:
   // #bluelab
   const IColor &GetTextColor() { return IControl::mText.mFGColor; }
   void SetTextColor(const IColor &color) { IControl::mText.mFGColor = color; };
-  
+
+  // #bluelab
+  const IColor &GetTextBGColor() { return mBGColor; }
+  void SetTextBGColor(const IColor &color) { mBGColor = color; };
+    
 protected:
   WDL_String mStr;
   IColor mBGColor;
