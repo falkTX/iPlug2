@@ -31,6 +31,23 @@
 
 BEGIN_IPLUG_NAMESPACE
 
+// #bluelab
+#if !defined OS_WIN
+
+#ifndef MAX_PATH_LEN
+#define MAX_PATH_LEN 2048
+#endif
+
+void INIPath(WDL_String& path, const char *pluginName)
+{
+#if defined OS_MAC
+    path.SetFormatted(MAX_PATH_LEN, "%s/Library/Application Support/%s/", getenv("HOME"), pluginName);
+#elif defined OS_LINUX
+    path.SetFormatted(MAX_PATH_LEN, "%s/.config/%s/", getenv("HOME"), pluginName);
+#endif
+}
+#endif
+
 #if defined OS_WIN
 #pragma mark - OS_WIN
 
