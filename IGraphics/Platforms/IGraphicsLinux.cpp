@@ -884,7 +884,21 @@ void IGraphicsLinux::PromptForFile(WDL_String& fileName, WDL_String& path, EFile
 
   WDL_String tmp;
   WDL_String args;
+
+  //#bluelab
+  // No need to cd , The "--filename" argument will open zenity on the right folder.
+  // And if we don't cd, it will be possible to do a "save as",
+  // with the filename already pre-filled!
+#if 0
   args.AppendFormatted(path.GetLength() + 10, "cd \"%s\"; ", path.Get());
+#endif
+
+  // #bluelab
+  // Instead, cd to home directory
+#if 1
+  args.Append("cd ;");
+#endif
+  
   args.Append("zenity --file-selection ");
 
   if (action == EFileAction::Save)
@@ -922,7 +936,7 @@ void IGraphicsLinux::PromptForFile(WDL_String& fileName, WDL_String& path, EFile
   WDL_String sStdout;
   WDL_String sStdin;
   int status;
-
+  
   if (RunSubprocess(args.Get(), sStdout, sStdin, &status) != 0)
   {
     fileName.Set("");
