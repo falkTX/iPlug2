@@ -789,6 +789,11 @@ VstIntPtr VSTCALLBACK IPlugVST2::VSTDispatcher(AEffect *pEffect, VstInt32 opCode
         {
           return 1;
         }
+        // #bluelab
+        /*if (!strcmp((char*) ptr, "bypass"))
+          {
+          return 1;
+          }*/
         
         return _this->VSTCanDo((char *) ptr);
       }
@@ -952,6 +957,13 @@ VstIntPtr VSTCALLBACK IPlugVST2::VSTDispatcher(AEffect *pEffect, VstInt32 opCode
     case effGetMidiProgramCategory:
     case effGetCurrentMidiProgram:
     case effSetBypass:
+        /*{
+        // #bluelab
+        // NOTE: some hosts may not support it..
+        // (e.g Reaper and probably many others)
+        _this->SetBypassed((int)value);
+        return 1;
+        }*/
     default:
     {
       return 0;
