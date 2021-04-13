@@ -30,6 +30,9 @@ UINT gSCROLLMSG;
 IPlugAPPHost::IPlugAPPHost()
 : mIPlug(MakePlug(InstanceInfo{this}))
 {
+  // #bluelab
+  mStartupArgc = 0;
+  mStartupArgv = NULL;
 }
 
 IPlugAPPHost::~IPlugAPPHost()
@@ -43,6 +46,15 @@ IPlugAPPHost::~IPlugAPPHost()
 
   if(mMidiOut)
     mMidiOut->closePort();
+
+  // #bluelab
+  if ((mStartupArgc > 0) && (mStartupArgv != NULL))
+  {
+    for (int i = 0; i < mStartupArgc; i++)
+    {
+      free(mStartupArgv[i]);
+    }
+  }
 }
 
 //static
@@ -802,3 +814,27 @@ void IPlugAPPHost::ErrorCallback(RtAudioError::Type type, const std::string &err
   //TODO:
 }
 
+// #bluelab
+void
+IPlugAPPHost::SetStartupArgs(int argc, const char **argv)
+{
+    if (argc > 0)
+    {
+        mStartupArgc = argc;
+        mStartupArgv = (char **)malloc(argc*sizeof(char *));
+
+        for (int i = 0; i < argc; i++)
+        {
+            int len = strlen(argv[i]);
+            mStartupArgv[i] = (char *)malloc(len*sizeof(char));
+            strcpy(mStartupArgv[i], argv[i]);
+        }
+    }
+}
+
+void
+IPlugAPPHost::GetStartupArgs(int *argc, char ***argv)
+{
+    *argc = mStartupArgc;
+    *argv = mStartupArgv;
+}

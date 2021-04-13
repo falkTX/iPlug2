@@ -58,7 +58,10 @@ public:
   // #bluelab
   // NOTE sure at all it is good to be set here ... :(
   void SetWindowTitle(const char *title);
-    
+
+  // #bluelab
+  void GetStartupArgs(int *argc, char ***argv);
+        
 private:
   IPlugAPPHost* mAppHost = nullptr;
   IPlugQueue<IMidiMsg> mMidiMsgsFromCallback {MIDI_TRANSFER_SIZE};

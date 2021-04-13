@@ -180,3 +180,10 @@ IPlugAPP::SetWindowTitle(const char *title)
     if (mAppHost != NULL)
         mAppHost->SetWindowTitle(title);
 }
+
+void
+IPlugAPP::GetStartupArgs(int *argc, char ***argv)
+{
+    if (mAppHost != NULL)
+        mAppHost->GetStartupArgs(argc, argv);
+}

@@ -221,7 +221,12 @@ public:
 
   // #bluelab
   void SetWindowTitle(const char *title);
-  
+
+  // To be called internally
+  void SetStartupArgs(int argc, const char **argv);
+  // To be called from the plugin
+  void GetStartupArgs(int *argc, char ***argv);
+      
 private:
   std::unique_ptr<IPlugAPP> mIPlug = nullptr;
   std::unique_ptr<RtAudio> mDAC = nullptr;
@@ -269,6 +274,10 @@ private:
 #endif
   
   friend class IPlugAPP;
+
+  // #bluelab
+  int mStartupArgc;
+  char **mStartupArgv;
 };
 
 END_IPLUG_NAMESPACE

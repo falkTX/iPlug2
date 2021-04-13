@@ -311,6 +311,9 @@ INT_PTR SWELLAppMain(int msg, INT_PTR parm1, INT_PTR parm2)
 
 HWND gHWND = NULL;
 
+// #bluelab
+void SetStartupArgs(int argc, const char **argv);
+    
 int main(int argc, char **argv)
 {
   SWELL_initargs(&argc,&argv);
@@ -318,7 +321,12 @@ int main(int argc, char **argv)
   SWELL_ExtendedAPI("APPNAME",(void*)"IPlug2");
 
   SWELLAppMain(SWELLAPP_ONLOAD,0,0);
+
+  // #bluelab
+  SetStartupArgs(argc, (const char **)argv);
+  
   SWELLAppMain(SWELLAPP_LOADED,0,0);
+  
   while (gHWND && !gHWND->m_hashaddestroy)
   {
     SWELL_RunMessageLoop();
@@ -354,6 +362,15 @@ INT_PTR SWELLAppMain(int msg, INT_PTR parm1, INT_PTR parm2)
   }
 
   return 0;
+}
+
+// #bluelab
+void
+SetStartupArgs(int argc, const char **argv)
+{
+  IPlugAPPHost* pAppHost = IPlugAPPHost::sInstance.get();
+  if (pAppHost != NULL)
+    pAppHost->SetStartupArgs(argc, argv);
 }
 
 #define CBS_HASSTRINGS 0
