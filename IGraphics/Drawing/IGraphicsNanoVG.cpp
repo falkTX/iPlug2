@@ -435,6 +435,22 @@ IGraphicsNanoVG::CreateBitmap(int w, int h, int bpp, unsigned char *data)
     return bmp;
 }
 
+void
+IGraphicsNanoVG::ReleaseBitmap(const IBitmap &bmp)
+{
+    ActivateGLContext();
+
+    Bitmap *bmp0 = (Bitmap *)bmp.GetAPIBitmap();
+    if (bmp0 != NULL)
+    {
+        ((IBitmap *)&bmp)->ResetAPIBitmap();
+        
+        delete bmp0;
+    }
+    
+    DeactivateGLContext();
+}
+
 void IGraphicsNanoVG::ApplyShadowMask(ILayerPtr& layer, RawBitmapData& mask, const IShadow& shadow)
 {
   const APIBitmap* pBitmap = layer->GetAPIBitmap();

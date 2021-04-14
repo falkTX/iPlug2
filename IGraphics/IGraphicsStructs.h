@@ -144,6 +144,9 @@ public:
   /** @return \true if the bitmap has valid data */
   inline bool IsValid() const { return mAPIBitmap != nullptr; }
 
+  // #bluelab
+  void ResetAPIBitmap() { mAPIBitmap = NULL; }
+    
 private:
   /** Pointer to the API specific bitmap */
   APIBitmap* mAPIBitmap;
