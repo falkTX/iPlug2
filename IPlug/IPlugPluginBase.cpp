@@ -278,6 +278,10 @@ void IPluginBase::MakeDefaultPreset(const char* name, int nPresets)
     if (pPreset)
     {
       pPreset->mInitialized = true;
+
+      // #bluelab
+      memset(pPreset->mName, '\0', MAX_PRESET_NAME_LEN);
+    
       strcpy(pPreset->mName, (name ? name : "Empty"));
       SerializeState(pPreset->mChunk);
     }
@@ -290,6 +294,10 @@ void IPluginBase::MakePreset(const char* name, ...)
   if (pPreset)
   {
     pPreset->mInitialized = true;
+
+    // #bluelab
+    memset(pPreset->mName, '\0', MAX_PRESET_NAME_LEN);
+      
     strcpy(pPreset->mName, name);
     
     int i, n = NParams();
@@ -312,6 +320,10 @@ void IPluginBase::MakePresetFromNamedParams(const char* name, int nParamsNamed, 
   if (pPreset)
   {
     pPreset->mInitialized = true;
+
+    // #bluelab
+    memset(pPreset->mName, '\0', MAX_PRESET_NAME_LEN);
+      
     strcpy(pPreset->mName, name);
     
     int i = 0, n = NParams();
@@ -354,6 +366,10 @@ void IPluginBase::MakePresetFromChunk(const char* name, IByteChunk& chunk)
   if (pPreset)
   {
     pPreset->mInitialized = true;
+
+    // #bluelab
+    memset(pPreset->mName, '\0', MAX_PRESET_NAME_LEN);
+      
     strcpy(pPreset->mName, name);
     
     pPreset->mChunk.PutChunk(&chunk);
@@ -476,6 +492,9 @@ void IPluginBase::ModifyCurrentPreset(const char* name)
     
     if (CStringHasContents(name))
     {
+      // #bluelab
+      memset(pPreset->mName, '\0', MAX_PRESET_NAME_LEN);
+      
       strcpy(pPreset->mName, name);
     }
   }
@@ -511,6 +530,10 @@ int IPluginBase::UnserializePresets(const IByteChunk& chunk, int startPos)
   {
     IPreset* pPreset = mPresets.Get(i);
     pos = chunk.GetStr(name, pos);
+
+    // #bluelab
+    memset(pPreset->mName, '\0', MAX_PRESET_NAME_LEN);
+    
     strcpy(pPreset->mName, name.Get());
     
     Trace(TRACELOC, "%d %s", i, pPreset->mName);

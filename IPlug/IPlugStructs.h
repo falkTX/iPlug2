@@ -604,6 +604,9 @@ struct IPreset
 
   IPreset()
   {
+    // #bluelab
+    memset(mName, '\0', MAX_PRESET_NAME_LEN);
+      
     sprintf(mName, "%s", UNUSED_PRESET_NAME);
   }
 };
