@@ -288,7 +288,9 @@ void IPlugVST2::HostSpecificInit()
   switch (GetHost())
   {
     case kHostAudition:
-    case kHostOrion:
+    // #bluelab
+    // On Orion, this avoided to use sidechain (detected on EQHack)
+    //case kHostOrion:
     case kHostForte:
     case kHostSAWStudio:
       LimitToStereoIO(); //TODO:  is this still necessary?
@@ -880,6 +882,10 @@ VstIntPtr VSTCALLBACK IPlugVST2::VSTDispatcher(AEffect *pEffect, VstInt32 opCode
     }
     case effSetProgram:
     {
+      // #bluelab
+      // - The test here looks inverted
+      // - Other wdl brands totally comment this test
+
       if (_this->DoesStateChunks() == false)
       {
         _this->ModifyCurrentPreset(); // TODO: test, something is funny about this http://forum.cockos.com/showpost.php?p=485113&postcount=22

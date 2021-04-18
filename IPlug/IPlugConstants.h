@@ -76,7 +76,8 @@ static const double AMP_DB = 8.685889638065036553;
 static const double IAMP_DB = 0.11512925464970;
 static const double DEFAULT_SAMPLE_RATE = 44100.0;
 static const int MAX_PRESET_NAME_LEN = 256;
-#define UNUSED_PRESET_NAME "empty"
+//#define UNUSED_PRESET_NAME "empty"
+#define UNUSED_PRESET_NAME "Empty"
 #define DEFAULT_USER_PRESET_NAME "user preset"
 
 #define AU_MAX_IO_CHANNELS 128

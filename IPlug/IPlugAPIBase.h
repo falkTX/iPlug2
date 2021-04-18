@@ -186,7 +186,7 @@ public:
   void CreateTimer();
 
   void OnTimer(Timer& t);
-  
+
 private:
   /** Implementations call into the APIs resize hooks
    * returns a bool to indicate whether the DAW or plugin class has resized the host window */

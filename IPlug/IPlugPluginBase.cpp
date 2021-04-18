@@ -282,7 +282,7 @@ void IPluginBase::MakeDefaultPreset(const char* name, int nPresets)
       // #bluelab
       memset(pPreset->mName, '\0', MAX_PRESET_NAME_LEN);
     
-      strcpy(pPreset->mName, (name ? name : "Empty"));
+      strcpy(pPreset->mName, (name ? name : UNUSED_PRESET_NAME));
       SerializeState(pPreset->mChunk);
     }
   }
@@ -403,7 +403,7 @@ static void MakeDefaultUserPresetName(WDL_PtrList<IPreset>* pPresets, char* str)
 void IPluginBase::EnsureDefaultPreset()
 {
   TRACE
-  MakeDefaultPreset("Empty", mPresets.GetSize());
+  MakeDefaultPreset(UNUSED_PRESET_NAME, mPresets.GetSize());
 }
 
 void IPluginBase::PruneUninitializedPresets()
@@ -485,9 +485,9 @@ void IPluginBase::ModifyCurrentPreset(const char* name)
   {
     IPreset* pPreset = mPresets.Get(mCurrentPresetIdx);
     pPreset->mChunk.Clear();
-    
+
     Trace(TRACELOC, "%d %s", mCurrentPresetIdx, pPreset->mName);
-    
+
     SerializeState(pPreset->mChunk);
     
     if (CStringHasContents(name))

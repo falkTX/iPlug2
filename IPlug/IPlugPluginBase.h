@@ -195,7 +195,7 @@ public:
    * @param idx The index of the preset whose name to get
    * @return CString preset name */
   const char* GetPresetName(int idx) const;
-  
+
   /** Copy source preset to preset at index
   * @param pSrc source preset
   * @param destIdx index of internal destination preset */
