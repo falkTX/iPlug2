@@ -95,7 +95,7 @@ private:
   IVec2 mMouseLockPos;
   bool mMouseVisible;
 
-  void Paint();
+  void Paint(IRECTList &rects);
   inline IMouseInfo GetMouseInfo(int16_t x, int16_t y, int16_t state);
   inline IMouseInfo GetMouseInfoDeltas(float& dX, float& dY, int16_t x, int16_t y, int16_t state);
   void WindowHandler(xcb_generic_event_t* evt);

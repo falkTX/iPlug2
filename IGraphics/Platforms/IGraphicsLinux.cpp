@@ -171,12 +171,15 @@ static uint64_t GetTimeMs()
   return (t.tv_sec * 1000) + (t.tv_nsec / 1000000);
 }
 
-void IGraphicsLinux::Paint()
+void IGraphicsLinux::Paint(IRECTList &rects)
 {
-  IRECT ir = {0, 0, static_cast<float>(WindowWidth()), static_cast<float>(WindowHeight())};
-  IRECTList rects;
-  rects.Add(ir.GetScaled(1.f / GetBackingPixelScale()));
-
+  // #bluelab Do not redraw all each timen only dirty controls
+  /*
+    IRECT ir = {0, 0, static_cast<float>(WindowWidth()), static_cast<float>(WindowHeight())};
+    IRECTList rects;
+    rects.Add(ir.GetScaled(1.f / GetBackingPixelScale()));
+  */
+  
   void* ctx = xcbt_window_draw_begin(mPlugWnd);
 
   if (ctx)
@@ -240,7 +243,7 @@ void IGraphicsLinux::TimerHandler(int timerID)
     IRECTList rects;
     if (IsDirty(rects))
     {
-      Paint();
+      Paint(rects);
       SetAllControlsClean();
     }
     // #bluelab
@@ -272,7 +275,12 @@ void IGraphicsLinux::WindowHandler(xcb_generic_event_t* evt)
 
         if (!ee->count) // MAYBE: can collect and use invalidated areas
         {
-          Paint();
+          // #bluelab Repaint all (that was the default)
+          IRECT ir = {0, 0, static_cast<float>(WindowWidth()), static_cast<float>(WindowHeight())};
+          IRECTList rects;
+          rects.Add(ir.GetScaled(1.f / GetBackingPixelScale()));
+  
+          Paint(rects);
         }
       }
       break;
