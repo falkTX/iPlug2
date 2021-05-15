@@ -10,6 +10,8 @@ set(_wdl_src
   fft.h
   resample.cpp
   resample.h
+  convoengine.h
+  convoengine.cpp
   )
 list(TRANSFORM _wdl_src PREPEND "${WDL_SRC}")
 iplug_target_add(_wdl INTERFACE
