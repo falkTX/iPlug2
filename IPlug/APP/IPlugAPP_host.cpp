@@ -825,7 +825,7 @@ IPlugAPPHost::SetStartupArgs(int argc, const char **argv)
 
         for (int i = 0; i < argc; i++)
         {
-            int len = strlen(argv[i]);
+            int len = strlen(argv[i]) + 1;
             mStartupArgv[i] = (char *)malloc(len*sizeof(char));
             strcpy(mStartupArgv[i], argv[i]);
         }
