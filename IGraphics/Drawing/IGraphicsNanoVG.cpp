@@ -515,7 +515,7 @@ void IGraphicsNanoVG::OnViewInitialized(void* pContext)
   // NOTE: but on UST for example, no antialiasing is very visible
   //mVG = nvgCreateContext(0);
     
-  mVG = nvgCreateContext(NVG_ANTIALIAS);
+    mVG = nvgCreateContext(NVG_ANTIALIAS); // | NVG_DEBUG);
 #endif
 
   if (mVG == nullptr)
