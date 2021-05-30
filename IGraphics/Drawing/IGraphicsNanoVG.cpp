@@ -741,6 +741,8 @@ void IGraphicsNanoVG::DoDrawText(const IText& text, const char* str, const IRECT
 
   nvgFillColor(mVG, NanoVGColor(text.mFGColor, pBlend));
   NanoVGSetBlendMode(mVG, pBlend);
+  // #bluelab Clip text according to provided bounds
+  SetClipRegion(bounds); 
   nvgText(mVG, x, y, str, NULL);
   nvgGlobalCompositeOperation(mVG, NVG_SOURCE_OVER);
   PathTransformRestore();
