@@ -1099,7 +1099,7 @@ public:
   
   /** @return \c true if tool tips are enabled */
   inline bool TooltipsEnabled() const { return mEnableTooltips; }
-  
+    
   /** @return An EUIResizerMode Representing whether the graphics context should scale or be resized, e.g. when dragging a corner resizer */
   EUIResizerMode GetResizerMode() const { return mGUISizeMode; }
 
@@ -1132,7 +1132,10 @@ public:
   
   /** Call this method in order to create tool tips for every IControl that show the associated parameter's name */
   void AssignParamNameToolTips();
-  
+
+    // #bluelab
+  void SetTooltipsDelay(float delaySec);
+    
   /** @param enable Set \c true if you wish to draw the rectangular region of the graphics context occupied by each IControl in mControls  */
   inline void ShowControlBounds(bool enable) { mShowControlBounds = enable; SetAllControlsDirty(); }
   
@@ -1756,7 +1759,10 @@ private:
     mMouseOver = nullptr;
     mMouseOverIdx = -1;
   }
-  
+
+  // #bluelab
+  void CheckTooltipsDelay();
+    
   WDL_PtrList<IControl> mControls;
   std::unordered_map<int, IControl*> mCtrlTags;
 
@@ -1851,6 +1857,11 @@ private:
 #ifdef IGRAPHICS_GL
   bool mNeedDrawResize;
 #endif
+
+  // #bluelab
+  float mTooltipsDelaySec;
+  double mPrevTooltipsTimestamp;
+  IControl *mCurrentTooltipControl;
 };
 
 END_IGRAPHICS_NAMESPACE

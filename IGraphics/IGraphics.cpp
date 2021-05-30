@@ -41,6 +41,8 @@ using VST3_API_BASE = iplug::IPlugVST3Controller;
 #include "IBubbleControl.h"
 #include "ITooltipControl.h"
 
+#define DELAY_TOOLTIPS 1
+
 #if defined OS_LINUX
 /*
  * Up to GCC 8 they have "forgotten" to transport C++11 standard expf into std:: namespace
@@ -78,6 +80,11 @@ IGraphics::IGraphics(IGEditorDelegate& dlg, int w, int h, int fps, float scale)
 #ifdef IGRAPHICS_GL
   mNeedDrawResize = false;
 #endif
+
+  // #bluelab
+  mTooltipsDelaySec = 0.0;
+  mPrevTooltipsTimestamp = GetTimestamp();
+  mCurrentTooltipControl = NULL;
 }
 
 IGraphics::~IGraphics()
@@ -617,6 +624,12 @@ void IGraphics::AssignParamNameToolTips()
   ForStandardControlsFunc(func);
 }
 
+// #bluelab
+void IGraphics::SetTooltipsDelay(float delaySec)
+{
+  mTooltipsDelaySec = delaySec;
+}
+
 void IGraphics::UpdatePeers(IControl* pCaller, int callerValIdx) // TODO: this could be really slow
 {
   double value = pCaller->GetValue(callerValIdx);
@@ -872,9 +885,11 @@ bool IGraphics::IsDirty(IRECTList& rects)
     mIdleTicks = 0;
   }
 #endif
-    
+  
 #endif
 
+  CheckTooltipsDelay();
+    
   //TODO: for GL backends, having an ImGui on top currently requires repainting everything on each frame
 #if defined IGRAPHICS_IMGUI && defined IGRAPHICS_GL
   if (mImGuiRenderer && mImGuiRenderer->GetDrawFunc())
@@ -1006,7 +1021,11 @@ void IGraphics::OnMouseDown(const std::vector<IMouseInfo>& points)
 
   // #bluelab
   mPrevMouseDown = bl_uptime();
-    
+  
+  // The user is doing something, do not disturb with tooltips
+  mCurrentTooltipControl = NULL;
+  mPrevTooltipsTimestamp = GetTimestamp();
+  
   bool singlePoint = points.size() == 1;
   
 #ifdef IGRAPHICS_IMGUI
@@ -1106,6 +1125,10 @@ void IGraphics::OnMouseDown(const std::vector<IMouseInfo>& points)
 void IGraphics::OnMouseUp(const std::vector<IMouseInfo>& points)
 {
 //  Trace("IGraphics::OnMouseUp", __LINE__, "x:%0.2f, y:%0.2f, mod:LRSCA: %i%i%i%i%i", x, y, mod.L, mod.R, mod.S, mod.C, mod.A);
+
+  // The user is doing something, do not disturb with tooltips
+  mCurrentTooltipControl = NULL;
+  mPrevTooltipsTimestamp = GetTimestamp();
   
   if (ControlIsCaptured())
   {
@@ -1203,10 +1226,17 @@ bool IGraphics::OnMouseOver(float x, float y, const IMouseMod& mod)
 
   if (mMouseOver)
     mMouseOver->OnMouseOver(x, y, mod);
-  
+
+#if !DELAY_TOOLTIPS
   if(mTooltipControl)
     mTooltipControl->SetControl(pControl);
-
+#endif // else postpone tooltip display
+  
+  // For making a tooltip appear, move the mouse on a control, and wait
+  // Any other manipulation won't make tooltips appear, to not disturb too much
+  mCurrentTooltipControl = pControl;
+  mPrevTooltipsTimestamp = GetTimestamp();
+      
   return pControl;
 }
 
@@ -1221,6 +1251,10 @@ void IGraphics::OnMouseOut()
   mCursorType = SetMouseCursor(ECursor::ARROW);
   ForAllControls(&IControl::OnMouseOut);
   ClearMouseOver();
+
+  // The user is doing something, do not disturb with tooltips
+  mCurrentTooltipControl = NULL;
+  mPrevTooltipsTimestamp = GetTimestamp();
 }
 
 void IGraphics::OnMouseDrag(const std::vector<IMouseInfo>& points)
@@ -1265,12 +1299,20 @@ void IGraphics::OnMouseDrag(const std::vector<IMouseInfo>& points)
   else if(mImGuiRenderer && points.size() == 1)
     mImGuiRenderer->OnMouseMove(points[0].x, points[0].y, points[0].ms);
 #endif
+
+  // The user is doing something, do not disturb with tooltips
+  mCurrentTooltipControl = NULL;
+  mPrevTooltipsTimestamp = GetTimestamp();
 }
 
 bool IGraphics::OnMouseDblClick(float x, float y, const IMouseMod& mod)
 {
   Trace("IGraphics::OnMouseDblClick", __LINE__, "x:%0.2f, y:%0.2f, mod:LRSCA: %i%i%i%i%i",
         x, y, mod.L, mod.R, mod.S, mod.C, mod.A);
+
+  // The user is doing something, do not disturb with tooltips
+  mCurrentTooltipControl = NULL;
+  mPrevTooltipsTimestamp = GetTimestamp();
   
 #ifdef IGRAPHICS_IMGUI
   if(mImGuiRenderer)
@@ -1326,6 +1368,10 @@ void IGraphics::OnMouseWheel(float x, float y, const IMouseMod& mod, float d)
   IControl* pControl = GetMouseControl(x, y, false);
   if (pControl)
     pControl->OnMouseWheel(x, y, mod, d);
+
+  // The user is doing something, do not disturb with tooltips
+  mCurrentTooltipControl = NULL;
+  mPrevTooltipsTimestamp = GetTimestamp();
 }
 
 bool IGraphics::OnKeyDown(float x, float y, const IKeyPress& key)
@@ -1333,6 +1379,10 @@ bool IGraphics::OnKeyDown(float x, float y, const IKeyPress& key)
   Trace("IGraphics::OnKeyDown", __LINE__, "x:%0.2f, y:%0.2f, key:%s",
         x, y, key.utf8);
 
+  // The user is doing something, do not disturb with tooltips
+  mCurrentTooltipControl = NULL;
+  mPrevTooltipsTimestamp = GetTimestamp();
+  
   bool handled = false;
 
 #ifdef IGRAPHICS_IMGUI
@@ -1360,6 +1410,10 @@ bool IGraphics::OnKeyUp(float x, float y, const IKeyPress& key)
 {
   Trace("IGraphics::OnKeyUp", __LINE__, "x:%0.2f, y:%0.2f, key:%s",
         x, y, key.utf8);
+
+  // The user is doing something, do not disturb with tooltips
+  mCurrentTooltipControl = NULL;
+  mPrevTooltipsTimestamp = GetTimestamp();
   
   bool handled = false;
   
@@ -1395,6 +1449,10 @@ void IGraphics::OnDrop(const char* str, float x, float y)
   // OnDrop() will be managed several times at different places
   if (mDropFunc)
       mDropFunc(str);
+
+  // The user is doing something, do not disturb with tooltips
+  mCurrentTooltipControl = NULL;
+  mPrevTooltipsTimestamp = GetTimestamp();
 }
 
 void IGraphics::ReleaseMouseCapture()
@@ -3037,3 +3095,22 @@ void IGraphics::AttachImGui(std::function<void(IGraphics*)> drawFunc, std::funct
     }
   #endif
   }
+
+void
+IGraphics::CheckTooltipsDelay()
+{
+  const double timestamp = GetTimestamp();
+
+  if (mCurrentTooltipControl == NULL)
+  {
+    mPrevTimestamp = timestamp;
+    return;
+  }
+  
+  const double timeDiff = timestamp - mPrevTooltipsTimestamp;
+  if (timeDiff > mTooltipsDelaySec)
+  {
+    if(mTooltipControl)
+        mTooltipControl->SetControl(mCurrentTooltipControl);  
+  }
+}
