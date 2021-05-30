@@ -240,6 +240,8 @@ void IGraphics::RemoveAllControls()
   
   mCtrlTags.clear();
   mControls.Empty(true);
+
+  mCurrentTooltipControl = NULL;
 }
 
 void IGraphics::SetControlPosition(int idx, float x, float y)

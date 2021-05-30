@@ -96,7 +96,9 @@ private:
     return bounds;
   }
 
-private:
+  // #bluelab
+  //private:
+protected:
   IColor mBGColor;
   IRECT mHoverControlBounds;
   WDL_String mDisplayStr;
