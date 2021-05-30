@@ -85,6 +85,7 @@ IGraphics::IGraphics(IGEditorDelegate& dlg, int w, int h, int fps, float scale)
   mTooltipsDelaySec = 0.0;
   mPrevTooltipsTimestamp = GetTimestamp();
   mCurrentTooltipControl = NULL;
+  mIsTooltipActive = false;
 }
 
 IGraphics::~IGraphics()
@@ -1232,11 +1233,18 @@ bool IGraphics::OnMouseOver(float x, float y, const IMouseMod& mod)
     mTooltipControl->SetControl(pControl);
 #endif // else postpone tooltip display
 
-  // When tooltip was open for a control, and then mouse moves to another control
-  if (pControl != mCurrentTooltipControl)
+  // When tooltip was open for a control, and then mouse moves
+  //if (pControl != mCurrentTooltipControl)
+  if (mIsTooltipActive)
   {
       if(mTooltipControl)
-          mTooltipControl->SetControl(nullptr);
+        mTooltipControl->SetControl(nullptr);
+
+      // Refresh all controls after tooltip close
+      // Hard way, should refresh only the controls under the closed tooltip instead
+      SetAllControlsDirty();
+
+      mIsTooltipActive = false;
   }
   
   // For making a tooltip appear, move the mouse on a control, and wait
@@ -1250,7 +1258,15 @@ bool IGraphics::OnMouseOver(float x, float y, const IMouseMod& mod)
 void IGraphics::OnMouseOut()
 {
   if(mTooltipControl)
+  {
     mTooltipControl->SetControl(nullptr); // Hides
+
+    // Refresh all controls after tooltip close
+    // Hard way, should refresh only the controls under the closed tooltip instead
+    SetAllControlsDirty();
+
+    mIsTooltipActive = false;
+  }
   
   Trace("IGraphics::OnMouseOut", __LINE__, "");
 
@@ -3118,6 +3134,10 @@ IGraphics::CheckTooltipsDelay()
   if (timeDiff > mTooltipsDelaySec)
   {
     if(mTooltipControl)
-        mTooltipControl->SetControl(mCurrentTooltipControl);  
+    {
+        mTooltipControl->SetControl(mCurrentTooltipControl);
+
+        mIsTooltipActive = true;
+    }
   }
 }

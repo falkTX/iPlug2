@@ -1862,6 +1862,7 @@ private:
   float mTooltipsDelaySec;
   double mPrevTooltipsTimestamp;
   IControl *mCurrentTooltipControl;
+  bool mIsTooltipActive;
 };
 
 END_IGRAPHICS_NAMESPACE
