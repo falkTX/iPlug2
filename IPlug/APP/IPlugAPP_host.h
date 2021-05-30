@@ -221,7 +221,8 @@ public:
 
   // #bluelab
   void SetWindowTitle(const char *title);
-
+  void ShowMessageBox(const char *message);
+    
   // To be called internally
   void SetStartupArgs(int argc, const char **argv);
   // To be called from the plugin

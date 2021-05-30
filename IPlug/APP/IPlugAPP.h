@@ -58,7 +58,8 @@ public:
   // #bluelab
   // NOTE sure at all it is good to be set here ... :(
   void SetWindowTitle(const char *title);
-
+  void ShowMessageBox(const char *message);
+    
   // #bluelab
   void GetStartupArgs(int *argc, char ***argv);
         

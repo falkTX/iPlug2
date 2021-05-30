@@ -598,6 +598,17 @@ IPlugAPPHost::SetWindowTitle(const char *title)
         SetWindowText(gHWND, title);
 }
 
+void
+IPlugAPPHost::ShowMessageBox(const char *message)
+{
+    WDL_String info;
+    info.Append(message);
+
+    if (gHWND != NULL)
+        MessageBox(gHWND, info.Get(), PLUG_NAME, MB_OK);
+}
+
+
 //static
 WDL_DLGRET IPlugAPPHost::MainDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {

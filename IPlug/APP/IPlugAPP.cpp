@@ -182,6 +182,13 @@ IPlugAPP::SetWindowTitle(const char *title)
 }
 
 void
+IPlugAPP::ShowMessageBox(const char *message)
+{
+    if (mAppHost != NULL)
+        mAppHost->ShowMessageBox(message);
+}
+
+void
 IPlugAPP::GetStartupArgs(int *argc, char ***argv)
 {
     if (mAppHost != NULL)
