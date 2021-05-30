@@ -1231,6 +1231,13 @@ bool IGraphics::OnMouseOver(float x, float y, const IMouseMod& mod)
   if(mTooltipControl)
     mTooltipControl->SetControl(pControl);
 #endif // else postpone tooltip display
+
+  // When tooltip was open for a control, and then mouse moves to another control
+  if (pControl != mCurrentTooltipControl)
+  {
+      if(mTooltipControl)
+          mTooltipControl->SetControl(nullptr);
+  }
   
   // For making a tooltip appear, move the mouse on a control, and wait
   // Any other manipulation won't make tooltips appear, to not disturb too much
