@@ -72,6 +72,10 @@ IPopupMenuControl::IPopupMenuControl(int paramIdx, IText text, IRECT collapsedBo
   
   mText = text;
   mHide = true;
+
+  mDropShadow = true;
+  mBorderColor = COLOR_WHITE;
+  mBorderWidth = 0.0; // No border by default
 }
 
 IPopupMenuControl::~IPopupMenuControl()
@@ -89,8 +93,13 @@ void IPopupMenuControl::Draw(IGraphics& g)
     
     if(pMenuPanel->mShouldDraw)
     {
-      DrawPanelShadow(g, pMenuPanel);
+      if (mDropShadow)
+          DrawPanelShadow(g, pMenuPanel);
       DrawPanelBackground(g, pMenuPanel); 
+
+      // #bluelab
+      if (mBorderWidth > 0.0)
+          DrawPanelBorder(g, pMenuPanel);
       
       int nItems = pMenuPanel->mMenu.NItems();
       int nCells = pMenuPanel->mCellBounds.GetSize();
@@ -332,6 +341,14 @@ void IPopupMenuControl::DrawPanelBackground(IGraphics& g, MenuPanel* panel)
 {
   // mTargetRECT = inner area
   g.FillRoundRect(mPanelBackgroundColor, panel->mTargetRECT, mRoundness, &panel->mBlend);
+}
+
+// #bluelab
+void IPopupMenuControl::DrawPanelBorder(IGraphics& g, MenuPanel* panel)
+{
+  // mTargetRECT = inner area
+    g.DrawRoundRect(mBorderColor, panel->mTargetRECT, mRoundness,
+                    &panel->mBlend, mBorderWidth);
 }
 
 void IPopupMenuControl::DrawPanelShadow(IGraphics& g, MenuPanel* panel)

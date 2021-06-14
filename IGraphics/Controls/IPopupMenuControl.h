@@ -83,6 +83,8 @@ public:
   virtual void DrawPanelBackground(IGraphics& g, MenuPanel* panel);
   /** Override this method to change the shadow of the pop-up menu panel */
   virtual void DrawPanelShadow(IGraphics& g, MenuPanel* panel);
+  // #bluelab
+  virtual void DrawPanelBorder(IGraphics& g, MenuPanel* panel);   
   /** Override this method to change the way a cell's background is drawn */
   virtual void DrawCellBackground(IGraphics& g, const IRECT& bounds, const IPopupMenu::Item* pItem, bool sel, IBlend* pBlend);
   /** Override this method to change the way a cell's text is drawn */
@@ -118,6 +120,11 @@ public:
   /** If set true, the menu (kNorth) is forced to appear below it's control(kSouth) when it would normally be above - only if there is room for it. */
   void SetMenuForcedSouth(bool isForcedSouth) { mForcedSouth = isForcedSouth;}
 
+  // #bluelab
+  void SetDropShadow(bool flag) { mDropShadow = flag; }
+  void SetBorderStyle(IColor borderColor, float borderWidth)
+    { mBorderColor = borderColor; mBorderWidth = borderWidth; }
+    
   /** Call this to create a pop-up menu
    * @param menu Reference to a menu from which to populate this user interface control. NOTE: this object should not be a temporary, otherwise when the menu returns asynchronously, it may not exist.
    * @param anchorArea The pop-up menu opens adjacent to this area, but won't occupy it. At the moment, the menu is always below or right of that region. */
@@ -245,6 +252,11 @@ private:
   IColor mDisabledItemColor = COLOR_GRAY;
   IColor mSeparatorColor = COLOR_MID_GRAY;
 
+  // #bluelab
+  bool mDropShadow;
+  IColor mBorderColor;
+  float mBorderWidth;
+    
 protected:
   IRECT mSpecifiedCollapsedBounds;
   IRECT mSpecifiedExpandedBounds;
