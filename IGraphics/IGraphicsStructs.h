@@ -694,6 +694,8 @@ struct IText
     , mTextEntryFGColor(TEFGColor)
   {
     strcpy(mFont, (fontID ? fontID : DEFAULT_FONT));
+
+    mClipToBounds = false;
   }
 
   /** Create a new IText with size, vertical align, color
@@ -706,6 +708,8 @@ struct IText
     mSize = size;
     mVAlign = valign;
     mFGColor = color;
+
+    mClipToBounds = false;
   }
   
   /** Create a new IText with size, horizontal align, color
@@ -718,6 +722,8 @@ struct IText
     mSize = size;
     mAlign = align;
     mFGColor = color;
+
+    mClipToBounds = false;
   }
   
   /** Create a new IText with size and fontID
@@ -728,6 +734,8 @@ struct IText
   {
     mSize = size;
     strcpy(mFont, (fontID ? fontID : DEFAULT_FONT));
+
+    mClipToBounds = false;
   }
   
   IText WithFGColor(const IColor& fgColor) const { IText newText = *this; newText.mFGColor = fgColor; return newText; }
@@ -746,6 +754,11 @@ struct IText
   float mAngle = 0.f; // Degrees ccwise from normal.
   EAlign mAlign = EAlign::Near;
   EVAlign mVAlign = EVAlign::Middle;
+
+  // #bluelab
+  // For tabs, we need to clip the text to the tab region
+  // But otherwise, we must not do it (makes fat texts, and problem with popup menus
+  bool mClipToBounds;
 };
 
 const IText DEFAULT_TEXT = IText();
