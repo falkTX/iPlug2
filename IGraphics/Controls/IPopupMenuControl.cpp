@@ -346,8 +346,15 @@ void IPopupMenuControl::DrawPanelBackground(IGraphics& g, MenuPanel* panel)
 // #bluelab
 void IPopupMenuControl::DrawPanelBorder(IGraphics& g, MenuPanel* panel)
 {
-  // mTargetRECT = inner area
-    g.DrawRoundRect(mBorderColor, panel->mTargetRECT, mRoundness,
+    // mTargetRECT = inner area
+    
+    IRECT rect = panel->mTargetRECT;
+    rect.L -= mBorderWidth;
+    rect.T -= mBorderWidth;
+    rect.R += mBorderWidth;
+    rect.B += mBorderWidth;
+    
+    g.DrawRoundRect(mBorderColor, rect, mRoundness,
                     &panel->mBlend, mBorderWidth);
 }
 
@@ -377,7 +384,7 @@ void IPopupMenuControl::DrawCellText(IGraphics& g, const IRECT& bounds, const IP
     else
       mText.mFGColor = mDisabledItemColor;
   }
-  
+      
   mText.mAlign = EAlign::Near;
   g.DrawText(mText, pItem->GetText(), textRect, pBlend);
 }
