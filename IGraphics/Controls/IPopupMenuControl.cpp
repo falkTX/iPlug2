@@ -98,8 +98,8 @@ void IPopupMenuControl::Draw(IGraphics& g)
       DrawPanelBackground(g, pMenuPanel); 
 
       // #bluelab
-      if (mBorderWidth > 0.0)
-          DrawPanelBorder(g, pMenuPanel);
+      //if (mBorderWidth > 0.0)
+      //    DrawPanelBorder(g, pMenuPanel);
       
       int nItems = pMenuPanel->mMenu.NItems();
       int nCells = pMenuPanel->mCellBounds.GetSize();
@@ -165,6 +165,11 @@ void IPopupMenuControl::Draw(IGraphics& g)
         }
       }
     }
+
+    // #bluelab
+    // Draw border over
+    if (mBorderWidth > 0.0)
+      DrawPanelBorder(g, pMenuPanel);
   }
   
   if(mCallOut && mMenuPanels.GetSize())
@@ -174,7 +179,7 @@ void IPopupMenuControl::Draw(IGraphics& g)
     {
       DrawSubMenuCalloutArrow(g, mSubMenuCalloutArrowBounds, &mMenuPanels.Get(0)->mBlend);
     }
-  }
+  }    
 }
 
 void IPopupMenuControl::OnMouseDown(float x, float y, const IMouseMod& mod)
@@ -349,10 +354,10 @@ void IPopupMenuControl::DrawPanelBorder(IGraphics& g, MenuPanel* panel)
     // mTargetRECT = inner area
     
     IRECT rect = panel->mTargetRECT;
-    rect.L -= mBorderWidth;
-    rect.T -= mBorderWidth;
-    rect.R += mBorderWidth;
-    rect.B += mBorderWidth;
+    rect.L -= mBorderWidth*0.5;
+    rect.T -= mBorderWidth*0.5;
+    rect.R += mBorderWidth*0.5;
+    rect.B += mBorderWidth*0.5;
     
     g.DrawRoundRect(mBorderColor, rect, mRoundness,
                     &panel->mBlend, mBorderWidth);
