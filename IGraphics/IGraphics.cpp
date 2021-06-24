@@ -1259,7 +1259,7 @@ bool IGraphics::OnMouseOver(float x, float y, const IMouseMod& mod)
 
 void IGraphics::OnMouseOut()
 {
-  if(mTooltipControl)
+    if(mTooltipControl && mIsTooltipActive)
   {
     mTooltipControl->SetControl(nullptr); // Hides
 
