@@ -55,6 +55,45 @@ public:
     }
   }
 
+  // #bluelab
+  // Display the tooltip above the mouse pointer, so we are sure that
+  // the mouse pointer is not over the tooltip (and then problem to read the tooltip)
+  virtual void SetCursorPos(IControl* pControl,
+                            float cursorX, float cursorY)
+  {
+    if (!pControl)
+        return;
+
+    IRECT tooltipBounds = CalculateBounds();
+      
+    // For tooltip above the cursor
+    float diff = cursorY - mHoverControlBounds.B;
+    diff -= tooltipBounds.H()*0.5;
+
+    // For tooltip below the cursor
+    if (mHoverControlBounds.T + diff < 0.0)
+    {
+        // Control is near the upper border of the window
+        // => draw the tooltip below the cursor instead
+        diff = -(cursorY - mHoverControlBounds.B);
+        diff += tooltipBounds.H()*0.5;
+    }
+    
+    mHoverControlBounds.Translate(0.0, diff);
+
+    if (mDisplayStr.GetLength() == 0)
+    {
+      SetRECT(IRECT());
+      Hide(true);
+      return;
+    }
+    else
+    {
+      SetRECT(CalculateBounds());
+      Hide(false);
+    }
+  }
+    
 private:
   virtual IRECT CalculateBounds()
   {
