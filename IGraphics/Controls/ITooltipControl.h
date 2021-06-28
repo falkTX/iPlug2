@@ -75,8 +75,8 @@ public:
     {
         // Control is near the upper border of the window
         // => draw the tooltip below the cursor instead
-        diff = cursorY - mHoverControlBounds.T;
-        diff -= tooltipBounds.H()*0.5;
+        diff = cursorY - mHoverControlBounds.B;
+        diff += tooltipBounds.H()*0.5;
     }
     
     mHoverControlBounds.Translate(0.0, diff);
