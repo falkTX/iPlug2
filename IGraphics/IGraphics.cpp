@@ -3141,7 +3141,7 @@ IGraphics::CheckTooltipsDelay()
 
         // #bluelab
         mTooltipControl->SetCursorPos(mCurrentTooltipControl, mCursorX, mCursorY);
-        
+
         mIsTooltipActive = true;
     }
   }
