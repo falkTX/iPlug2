@@ -516,6 +516,7 @@ void IGraphicsNanoVG::OnViewInitialized(void* pContext)
   //mVG = nvgCreateContext(0);
     
     mVG = nvgCreateContext(NVG_ANTIALIAS); // | NVG_DEBUG);
+    //mVG = nvgCreateContext(NVG_ANTIALIAS | NVG_DEBUG);
 #endif
 
   if (mVG == nullptr)

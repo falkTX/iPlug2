@@ -90,6 +90,9 @@ public:
   int UnserializeEditorSize(const IByteChunk& chunk, int startPos);
     
 protected:
+  // #bluelab
+  virtual void OnParamChangeUI(int paramIdx, EParamSource source = kUnknown) override;
+    
   std::function<IGraphics*()> mMakeGraphicsFunc = nullptr;
   std::function<void(IGraphics* pGraphics)> mLayoutFunc = nullptr;
 private:

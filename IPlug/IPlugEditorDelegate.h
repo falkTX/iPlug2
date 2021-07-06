@@ -112,6 +112,16 @@ public:
   {
     Trace(TRACELOC, "idx:%i src:%s\n", paramIdx, ParamSourceStrs[source]);
     OnParamChange(paramIdx);
+
+    // #bluelab
+    // When called from host automation, the controls are not moving according
+    // to the param change (at least on linux)
+    if (source == kHost)
+      // Automations pass here
+    {
+        // Update the corresponding control
+        OnParamChangeUI(paramIdx, source);
+    }
   }
   
   /** Another version of the OnParamChange method without an EParamSource, for backwards compatibility / simplicity.

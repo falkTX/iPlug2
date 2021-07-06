@@ -231,3 +231,34 @@ bool IGEditorDelegate::OnKeyUp(const IKeyPress& key)
   else
     return false;
 }
+
+
+// #bluelab
+void IGEditorDelegate::OnParamChangeUI(int paramIdx, EParamSource source)
+{
+  // For the host automation case
+  if (source == kHost)
+  {
+      IGraphics* pGraphics = GetUI();
+      if (pGraphics != NULL)
+      {
+        for (int c = 0; c < pGraphics->NControls(); c++)
+        {
+          IControl* control = pGraphics->GetControl(c);
+          if (control != NULL)
+          {
+            int idx = control->GetParamIdx();
+            if (idx == paramIdx)
+            {
+              double value = GetParam(paramIdx)->ToNormalized(value);
+              control->SetValue(value);
+              control->SetDirty(false);
+
+              // Don't break here in case we have several controls with the same param
+            }
+          }
+        }
+      }
+  }
+}
+    
