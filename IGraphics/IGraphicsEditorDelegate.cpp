@@ -251,9 +251,12 @@ void IGEditorDelegate::OnParamChangeUI(int paramIdx, EParamSource source)
             if (idx == paramIdx)
             {
               double value = GetParam(paramIdx)->ToNormalized(value);
-              control->SetValue(value);
-              control->SetDirty(false);
-
+              if (!control->IsDisabled()) // Dont animate disabled controls
+              {
+                control->SetValue(value);
+                control->SetDirty(false);
+              }
+              
               // Don't break here in case we have several controls with the same param
             }
           }
