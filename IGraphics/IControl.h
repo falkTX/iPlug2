@@ -377,7 +377,10 @@ public:
   
   /** @return \c true if the control ignores mouse events */
   bool GetIgnoreMouse() const { return mIgnoreMouse; }
-  
+
+  // #bluelab
+  void SetIgnoreMouse(bool flag) { mIgnoreMouse = flag; }
+    
   /** @return \c true if the control should show parameter labels/units e.g. "Hz" in text entry prompts */
   bool GetPromptShowsParamLabel() const { return mPromptShowsParamLabel; }
 
