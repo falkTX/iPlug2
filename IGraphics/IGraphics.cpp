@@ -854,6 +854,10 @@ bool IGraphics::IsDirty(IRECTList& rects)
 
   ForAllControlsFunc([](IControl& control) { control.Animate(); } );
 
+  // #bluelab: put it before "dirty" test, because if we just open a tooltip,
+  // that can change the dirty flag and the dirty region
+  CheckTooltipsDelay();
+  
   bool dirty = false;
     
   auto func = [&dirty, &rects](IControl& control) {
@@ -890,8 +894,6 @@ bool IGraphics::IsDirty(IRECTList& rects)
 #endif
   
 #endif
-
-  CheckTooltipsDelay();
     
   //TODO: for GL backends, having an ImGui on top currently requires repainting everything on each frame
 #if defined IGRAPHICS_IMGUI && defined IGRAPHICS_GL
