@@ -116,6 +116,9 @@ private:
   // Avoid conflicts between timer and window close ath the same time
   bool mClosing;
   bool mTimerProcessing;
+
+  double mPrevTimeStampPaint = 0.;
+  int mTimerDelay;
 };
 
 END_IGRAPHICS_NAMESPACE

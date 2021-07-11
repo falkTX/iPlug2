@@ -246,11 +246,29 @@ void IGraphicsLinux::TimerHandler(int timerID)
       Paint(rects);
       SetAllControlsClean();
     }
+  
     // #bluelab
-    //int msec = 6;
     int fps = FPS();
     int msec = (int)(1000.0/fps);
     
+#if 1
+    // Adjust, depending on the real time spent,
+    // in order to stick more closer to the chosen fps
+    const double timeStamp = GetTimestamp();
+    const double timeDiff =  timeStamp- mPrevTimeStampPaint;
+    mPrevTimeStampPaint = timeStamp;
+
+    int diff = (int)(timeDiff*1000) - msec;
+    if (diff > 0)
+        mTimerDelay--;
+    if (diff < 0)
+        mTimerDelay++;
+    if (mTimerDelay < 0)
+        mTimerDelay = 0;
+    
+    msec = mTimerDelay;
+#endif
+        
     xcbt_timer_set(mX, IPLUG_TIMER_ID, msec, (xcbt_timer_cb) TimerHandlerProxy, this);
   }
 
@@ -1226,6 +1244,8 @@ IGraphicsLinux::IGraphicsLinux(IGEditorDelegate& dlg, int w, int h, int fps, flo
   // #bluelab
   mClosing = false;;
   mTimerProcessing = false;
+  mPrevTimeStampPaint = 0.0;
+  mTimerDelay = (int)(1000.0/fps);
 }
 
 IGraphicsLinux::~IGraphicsLinux()

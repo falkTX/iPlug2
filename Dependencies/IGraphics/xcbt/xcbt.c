@@ -265,7 +265,7 @@ void xcbt_timer_set(xcbt px, int timer_id, int msec, xcbt_timer_cb cb, void *uda
           t->udata = udata;
           xcbt_time(&t->tv_sec, &t->tv_msec);
           t->tv_msec += msec;
-          if(t->tv_msec >= 1000){ // normilize
+          if(t->tv_msec >= 1000){ // normalize
             t->tv_sec += t->tv_msec / 1000;
             t->tv_msec %= 1000;
           }
