@@ -3130,7 +3130,7 @@ IGraphics::CheckTooltipsDelay()
 
   if (mCurrentTooltipControl == NULL)
   {
-    mPrevTimestamp = timestamp;
+    mPrevTooltipsTimestamp = timestamp;
     return;
   }
   

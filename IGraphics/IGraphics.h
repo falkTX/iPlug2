@@ -1436,7 +1436,7 @@ public:
   /** Disable or enable controls linked to a specific parameter
    * @param paramIdx The parameter index
    * @param disable /c true to disable */
-  void DisableControl(int paramIdx, bool diable);
+  void DisableControl(int paramIdx, bool disable);
 
   /** Calls SetDirty() on every control */
   void SetAllControlsDirty();
