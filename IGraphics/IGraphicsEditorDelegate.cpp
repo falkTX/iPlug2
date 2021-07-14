@@ -247,16 +247,19 @@ void IGEditorDelegate::OnParamChangeUI(int paramIdx, EParamSource source)
           IControl* control = pGraphics->GetControl(c);
           if (control != NULL)
           {
-            int idx = control->GetParamIdx();
-            if (idx == paramIdx)
+            // One control can have several params
+            for (int i = 0; i < control->NVals(); i++)
             {
-              double value = GetParam(paramIdx)->GetNormalized();
-              if (!control->IsDisabled()) // Dont animate disabled controls
+              int idx = control->GetParamIdx(i);
+              if (idx == paramIdx)
               {
-                control->SetValue(value);
-                control->SetDirty(false);
+                double value = GetParam(idx)->GetNormalized();
+                if (!control->IsDisabled()) // Dont animate disabled controls
+                {
+                  control->SetValue(value, i);
+                  control->SetDirty(false);
+                }
               }
-              
               // Don't break here in case we have several controls with the same param
             }
           }
