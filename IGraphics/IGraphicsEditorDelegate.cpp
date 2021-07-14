@@ -250,7 +250,7 @@ void IGEditorDelegate::OnParamChangeUI(int paramIdx, EParamSource source)
             int idx = control->GetParamIdx();
             if (idx == paramIdx)
             {
-              double value = GetParam(paramIdx)->ToNormalized(value);
+              double value = GetParam(paramIdx)->GetNormalized();
               if (!control->IsDisabled()) // Dont animate disabled controls
               {
                 control->SetValue(value);
