@@ -628,7 +628,8 @@ bool IPlugAPPHost::InitAudio(uint32_t inId, uint32_t outId, uint32_t sr, uint32_
   mAudioEnding = false;
   mAudioDone = false;
   
-  mIPlug->SetBlockSize(APP_SIGNAL_VECTOR_SIZE);
+  //mIPlug->SetBlockSize(APP_SIGNAL_VECTOR_SIZE);
+  mIPlug->SetBlockSize(mBufferSize); // #bluelab
   mIPlug->SetSampleRate(mSampleRate);
   mIPlug->OnReset();
 
@@ -733,7 +734,8 @@ int IPlugAPPHost::AudioCallback(void* pOutputBuffer, void* pInputBuffer, uint32_
     
     for (int i = 0; i < nFrames; i++)
     {
-      _this->mBufIndex %= APP_SIGNAL_VECTOR_SIZE;
+      //_this->mBufIndex %= APP_SIGNAL_VECTOR_SIZE;
+      _this->mBufIndex %= _this->mBufferSize; // #bluelab
 
       if (_this->mBufIndex == 0)
       {
@@ -747,9 +749,11 @@ int IPlugAPPHost::AudioCallback(void* pOutputBuffer, void* pInputBuffer, uint32_
           _this->mOutputBufPtrs.Set(c, (pOutputBufferD + (c * nFrames)) + i);
         }
         
-        _this->mIPlug->AppProcess(_this->mInputBufPtrs.GetList(), _this->mOutputBufPtrs.GetList(), APP_SIGNAL_VECTOR_SIZE);
+        //_this->mIPlug->AppProcess(_this->mInputBufPtrs.GetList(), _this->mOutputBufPtrs.GetList(), APP_SIGNAL_VECTOR_SIZE); // origin
+        _this->mIPlug->AppProcess(_this->mInputBufPtrs.GetList(), _this->mOutputBufPtrs.GetList(), _this->mBufferSize); // #bluelab
 
-        _this->mSamplesElapsed += APP_SIGNAL_VECTOR_SIZE;
+        //_this->mSamplesElapsed += APP_SIGNAL_VECTOR_SIZE;
+        _this->mSamplesElapsed += _this->mBufferSize; // #bluelab
       }
       
       for (int c = 0; c < nouts; c++)
