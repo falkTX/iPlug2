@@ -88,11 +88,11 @@ public:
    * @param startPos The start position in the chunk where parameter values are stored
    * @return The new chunk position (endPos) */
   int UnserializeEditorSize(const IByteChunk& chunk, int startPos);
-    
-protected:
+
   // #bluelab
   virtual void OnParamChangeUI(int paramIdx, EParamSource source = kUnknown) override;
     
+protected:  
   std::function<IGraphics*()> mMakeGraphicsFunc = nullptr;
   std::function<void(IGraphics* pGraphics)> mLayoutFunc = nullptr;
 private:
