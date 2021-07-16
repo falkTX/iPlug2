@@ -40,7 +40,7 @@ IPlugAPPHost::~IPlugAPPHost()
   mExiting = true;
   
   CloseAudio();
-  
+
   if(mMidiIn)
     mMidiIn->cancelCallback();
 
@@ -70,7 +70,7 @@ bool IPlugAPPHost::Init()
     
   if (!InitState())
     return false;
-  
+
   TryToChangeAudioDriverType(); // will init RTAudio with an API type based on gState->mAudioDriverType
   ProbeAudioIO(); // find out what audio IO devs are available and put their IDs in the global variables gAudioInputDevs / gAudioOutputDevs
   InitMidi(); // creates RTMidiIn and RTMidiOut objects
@@ -584,7 +584,7 @@ void IPlugAPPHost::CloseAudio()
     
       while (!mAudioDone)
         Sleep(10);
-      
+
       try
       {
         mDAC->abortStream();
@@ -600,7 +600,7 @@ void IPlugAPPHost::CloseAudio()
 }
 
 bool IPlugAPPHost::InitAudio(uint32_t inId, uint32_t outId, uint32_t sr, uint32_t iovs)
-{  
+{
   CloseAudio();
 
   RtAudio::StreamParameters iParams, oParams;
@@ -717,7 +717,7 @@ void ApplyFades(double *pBuffer, int nChans, int nFrames, bool down)
 int IPlugAPPHost::AudioCallback(void* pOutputBuffer, void* pInputBuffer, uint32_t nFrames, double streamTime, RtAudioStreamStatus status, void* pUserData)
 {
   IPlugAPPHost* _this = (IPlugAPPHost*) pUserData;
-
+  
   int nins = _this->GetPlug()->MaxNChannels(ERoute::kInput);
   int nouts = _this->GetPlug()->MaxNChannels(ERoute::kOutput);
   
@@ -784,7 +784,7 @@ int IPlugAPPHost::AudioCallback(void* pOutputBuffer, void* pInputBuffer, uint32_
 void IPlugAPPHost::MIDICallback(double deltatime, std::vector<uint8_t>* pMsg, void* pUserData)
 {
   IPlugAPPHost* _this = (IPlugAPPHost*) pUserData;
-  
+
   if (pMsg->size() == 0 || _this->mExiting)
     return;
   
