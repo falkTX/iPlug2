@@ -860,14 +860,19 @@ WDL_DLGRET IPlugAPPHost::MainDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPA
         IGraphics* pGraphics = pPlug->GetUI();
 
         HDROP hdrop = (HDROP)wParam;
+
+        // #bluelab: manage drag n drop of several files
+        int numFiles = DragQueryFile(hdrop, 0xFFFFFFFF, NULL, 0);
+        for (int i = 0; i < numFiles; i++)
+        {
+          char pathToFile[1025];
+          DragQueryFile(hdrop, i, pathToFile, 1024);
       
-        char pathToFile[1025];
-        DragQueryFile(hdrop, 0, pathToFile, 1024);
-      
-        POINT point;
-        DragQueryPoint(hdrop, &point);
+          POINT point;
+          DragQueryPoint(hdrop, &point);
         
-        pGraphics->OnDrop(pathToFile, point.x, point.y);
+          pGraphics->OnDrop(pathToFile, point.x, point.y);
+        }
       }
     }
     break;
