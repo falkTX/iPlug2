@@ -273,8 +273,9 @@ int IPlugAPPHost::GetMIDIPortNumber(ERoute direction, const char* nameToTest) co
 
 void IPlugAPPHost::ProbeAudioIO()
 {
-  std::cout << "\nRtAudio Version " << RtAudio::getVersion() << std::endl;
-
+  // #bluelab
+  std::cerr << "\nRtAudio Version " << RtAudio::getVersion() << std::endl;
+  
   RtAudio::DeviceInfo info;
 
   mAudioInputDevs.clear();
@@ -299,9 +300,15 @@ void IPlugAPPHost::ProbeAudioIO()
     mAudioIDDevNames.push_back(deviceName);
 
     if ( info.probed == false )
-      std::cout << deviceName << ": Probe Status = Unsuccessful\n";
+    {
+      // #bluelab
+      std::cerr << deviceName << ": Probe Status = Unsuccessful\n";
+    }
     else if ( !strcmp("Generic Low Latency ASIO Driver", deviceName.c_str() ))
-      std::cout << deviceName << ": Probe Status = Unsuccessful\n";
+    {
+      // #bluelab
+      std::cerr << deviceName << ": Probe Status = Unsuccessful\n";
+    }
     else
     {
       if(info.inputChannels > 0)
