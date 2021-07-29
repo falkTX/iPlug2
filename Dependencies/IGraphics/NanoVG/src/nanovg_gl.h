@@ -136,7 +136,11 @@ enum GLNVGshaderType {
 	NSVG_SHADER_FILLGRAD,
 	NSVG_SHADER_FILLIMG,
 	NSVG_SHADER_SIMPLE,
-	NSVG_SHADER_IMG
+	NSVG_SHADER_IMG,
+	NSVG_SHADER_FAST_FILLCOLOR = 5,
+	NSVG_SHADER_FAST_FILLIMG,
+	NSVG_SHADER_FILLCOLOR,
+	NSVG_SHADER_FAST_FILLGLYPH,
 };
 
 #if NANOVG_GL_USE_UNIFORMBUFFER
@@ -252,6 +256,7 @@ struct GLNVGcontext {
 	int ctextures;
 	int textureId;
 	GLuint vertBuf;
+    float devicePixelRatio;
 #if defined NANOVG_GL3
 	GLuint vertArr;
 #endif
@@ -261,6 +266,8 @@ struct GLNVGcontext {
 	int fragSize;
 	int flags;
 
+        float g_xform[6];
+  
 	// Per frame buffers
 	GLNVGcall* calls;
 	int ccalls;
@@ -284,8 +291,8 @@ struct GLNVGcontext {
 	GLuint stencilFuncMask;
 	GLNVGblend blendFunc;
 	#endif
-
-	int dummyTex;
+  // awtk
+  //int dummyTex;
 };
 typedef struct GLNVGcontext GLNVGcontext;
 
@@ -399,6 +406,8 @@ static GLNVGtexture* glnvg__findTexture(GLNVGcontext* gl, int id)
 	return NULL;
 }
 
+static void glnvg__checkError(GLNVGcontext* gl, const char* str); // #bluelab
+
 static int glnvg__deleteTexture(GLNVGcontext* gl, int id)
 {
 	int i;
@@ -407,6 +416,9 @@ static int glnvg__deleteTexture(GLNVGcontext* gl, int id)
 			if (gl->textures[i].tex != 0 && (gl->textures[i].flags & NVG_IMAGE_NODELETE) == 0)
 				glDeleteTextures(1, &gl->textures[i].tex);
 			memset(&gl->textures[i], 0, sizeof(gl->textures[i]));
+            
+            glnvg__checkError(gl, "delete tex"); // #bluelab
+            
 			return 1;
 		}
 	}
@@ -523,7 +535,9 @@ static void glnvg__getUniforms(GLNVGshader* shader)
 #endif
 }
 
-static int glnvg__renderCreateTexture(void* uptr, int type, int w, int h, int imageFlags, const unsigned char* data);
+// awtk
+//static int glnvg__renderCreateTexture(void* uptr, int type, int w, int h, int imageFlags, const unsigned char* data);
+static int glnvg__renderCreateTexture(void* uptr, int type, int w, int h, int stride, int imageFlags, const unsigned char* data);
 
 static int glnvg__renderCreate(void* uptr)
 {
@@ -647,58 +661,168 @@ static int glnvg__renderCreate(void* uptr)
 		"	sc = vec2(0.5,0.5) - sc * scissorScale;\n"
 		"	return clamp(sc.x,0.0,1.0) * clamp(sc.y,0.0,1.0);\n"
 		"}\n"
-		"#ifdef EDGE_AA\n"
+	  //"#ifdef EDGE_AA\n"
 		"// Stroke - from [0..1] to clipped pyramid, where the slope is 1px.\n"
 		"float strokeMask() {\n"
 		"	return min(1.0, (1.0-abs(ftcoord.x*2.0-1.0))*strokeMult) * min(1.0, ftcoord.y);\n"
 		"}\n"
-		"#endif\n"
+	  //	"#endif\n"
 		"\n"
-		"void main(void) {\n"
-		"   vec4 result;\n"
-		"	float scissor = scissorMask(fpos);\n"
-		"#ifdef EDGE_AA\n"
-		"	float strokeAlpha = strokeMask();\n"
-		"	if (strokeAlpha < strokeThr) discard;\n"
-		"#else\n"
-		"	float strokeAlpha = 1.0;\n"
-		"#endif\n"
-		"	if (type == 0) {			// Gradient\n"
-		"		// Calculate gradient color using box gradient\n"
-		"		vec2 pt = (paintMat * vec3(fpos,1.0)).xy;\n"
-		"		float d = clamp((sdroundrect(pt, extent, radius) + feather*0.5) / feather, 0.0, 1.0);\n"
-		"		vec4 color = mix(innerCol,outerCol,d);\n"
-		"		// Combine alpha\n"
-		"		color *= strokeAlpha * scissor;\n"
-		"		result = color;\n"
-		"	} else if (type == 1) {		// Image\n"
-		"		// Calculate color fron texture\n"
-		"		vec2 pt = (paintMat * vec3(fpos,1.0)).xy / extent;\n"
-		"#ifdef NANOVG_GL3\n"
-		"		vec4 color = texture(tex, pt);\n"
-		"#else\n"
-		"		vec4 color = texture2D(tex, pt);\n"
-		"#endif\n"
-		"		if (texType == 1) color = vec4(color.xyz*color.w,color.w);"
-		"		if (texType == 2) color = vec4(color.x);"
-		"		// Apply color tint and alpha.\n"
-		"		color *= innerCol;\n"
-		"		// Combine alpha\n"
-		"		color *= strokeAlpha * scissor;\n"
-		"		result = color;\n"
-		"	} else if (type == 2) {		// Stencil fill\n"
-		"		result = vec4(1,1,1,1);\n"
-		"	} else if (type == 3) {		// Textured tris\n"
-		"#ifdef NANOVG_GL3\n"
-		"		vec4 color = texture(tex, ftcoord);\n"
-		"#else\n"
-		"		vec4 color = texture2D(tex, ftcoord);\n"
-		"#endif\n"
-		"		if (texType == 1) color = vec4(color.xyz*color.w,color.w);"
-		"		if (texType == 2) color = vec4(color.x);"
-		"		color *= scissor;\n"
-		"		result = color * innerCol;\n"
-		"	}\n"
+	  //"void main(void) {\n"
+	  //	"   vec4 result;\n"
+	  //	"	float scissor = scissorMask(fpos);\n"
+	  //	"#ifdef EDGE_AA\n"
+	  //	"	float strokeAlpha = strokeMask();\n"
+	  //#if BLUELAB_COLORMAP
+	  //      "       if (useColormap > 0.5) strokeAlpha = 1.0;\n"
+	  //#endif
+	  //	"	if (strokeAlpha < strokeThr) discard;\n"
+	  //	"#else\n"
+	  //	"	float strokeAlpha = 1.0;\n"
+	  //	"#endif\n"
+	  //	"	if (type == 0) {			// Gradient\n"
+	  //	"		// Calculate gradient color using box gradient\n"
+	  //	"		vec2 pt = (paintMat * vec3(fpos,1.0)).xy;\n"
+	  //	"		float d = clamp((sdroundrect(pt, extent, radius) + feather*0.5) / feather, 0.0, 1.0);\n"
+	  //	"		vec4 color = mix(innerCol,outerCol,d);\n"
+	  //	"		// Combine alpha\n"
+	  //	"		color *= strokeAlpha * scissor;\n"
+	  //	"		result = color;\n"
+	  //	"	} else if (type == 1) {		// Image\n"
+	  //	"		// Calculate color fron texture\n"
+	  //	"		vec2 pt = (paintMat * vec3(fpos,1.0)).xy / extent;\n"
+	  //	"#ifdef NANOVG_GL3\n"
+	  //	"		vec4 color = texture(tex, pt);\n"
+	  //	"#else\n"
+	  //	"		vec4 color = texture2D(tex, pt);\n"
+	  //	"#endif\n"
+	  //	"		if (texType == 1) color = vec4(color.xyz*color.w,color.w);"
+	  //	"		if (texType == 2) color = vec4(color.x);"
+	  //	"		// Apply color tint and alpha.\n"
+	  //	"		color *= innerCol;\n"
+	  //	"		// Combine alpha\n"
+	  //	"		color *= strokeAlpha * scissor;\n"
+	  //	"		result = color;\n"
+	  //	"	} else if (type == 2) {		// Stencil fill\n"
+	  //	"		result = vec4(1,1,1,1);\n"
+	  //	"	} else if (type == 3) {		// Textured tris\n"
+	  //	"#ifdef NANOVG_GL3\n"
+	  //	"		vec4 color = texture(tex, ftcoord);\n"
+	  //	"#else\n"
+	  //	"		vec4 color = texture2D(tex, ftcoord);\n"
+	  //	"#endif\n"
+	  //	"		if (texType == 1) color = vec4(color.xyz*color.w,color.w);"
+	  //	"		if (texType == 2) color = vec4(color.x);"
+	  //	"		color *= scissor;\n"
+	  //	"		result = color * innerCol;\n"
+	  //	"	}\n"
+	  //#if BLUELAB_COLORMAP
+	  //"   if (useColormap > 0.5) {\n"
+	  //"	vec2 ct = vec2(result.x, 0.0);\n"
+	  //"#ifdef NANOVG_GL3\n"
+	  //"	result = texture(colormapTex, ct);\n"
+	  //"#else\n"
+	  //"	result = texture2D(colormapTex, ct);\n"
+	  //"#endif\n"
+	  //"   }\n"
+	  //#endif
+	  //"#ifdef NANOVG_GL3\n"
+	  //"	outColor = result;\n"
+	  //	"#else\n"
+	  //	"	gl_FragColor = result;\n"
+	  //	"#endif\n"
+	  //	"}\n";
+	  "void main(void) {\n"
+	  " vec4 result;\n"
+	  " float strokeAlpha;\n"
+	  " if (type == 5) {    //fast fill color\n"
+	  "   result = innerCol;\n"
+	  " } else if (type == 6) {   //fast fill image\n"
+	  "   vec2 pt = (paintMat * vec3(fpos,1.0)).xy / extent;\n"
+	  "#ifdef NANOVG_GL3\n"
+	  "   vec4 color = texture(tex, pt);\n"
+	  "#else\n"
+	  "   vec4 color = texture2D(tex, pt);\n"
+	  "#endif\n"
+	  "   strokeAlpha = strokeMask();\n"
+#if BLUELAB_COLORMAP
+	  "if (useColormap > 0.5) strokeAlpha = 1.0;\n"
+#endif
+	  "   if (strokeAlpha < strokeThr) discard;\n"
+	  "   if (texType == 1) color = vec4(color.xyz*color.w,color.w);"
+	  "   result = innerCol * color * strokeAlpha;\n"
+	  " } else if(type == 7) {      // fill color\n"
+	  "   strokeAlpha = strokeMask();\n"
+#if BLUELAB_COLORMAP
+	  "if (useColormap > 0.5) strokeAlpha = 1.0;\n"
+#endif
+	  "   if (strokeAlpha < strokeThr) discard;\n"
+	  "   float scissor = scissorMask(fpos);\n"
+	  "   vec4 color = innerCol;\n"
+	  "   color *= strokeAlpha * scissor;\n"
+	  "   result = color;\n"
+	  " } else if (type == 8) {   // fast fill glyph\n"
+	  "#ifdef NANOVG_GL3\n"
+	  "   vec4 color = texture(tex, ftcoord);\n"
+	  "#else\n"
+	  "   vec4 color = texture2D(tex, ftcoord);\n"
+	  "#endif\n"
+	  "   if(color.x < 0.02) discard;\n"
+	  "   result = innerCol * color.x;\n"
+	  " } else if (type == 0) {   // gradient\n"
+	  "   strokeAlpha = strokeMask();\n"
+#if BLUELAB_COLORMAP
+	  "if (useColormap > 0.5) strokeAlpha = 1.0;\n"
+#endif
+	  "   if (strokeAlpha < strokeThr) discard;\n"
+	  "   // Calculate gradient color using box gradient\n"
+	  "   vec2 pt = (paintMat * vec3(fpos,1.0)).xy;\n"
+	  "   float d = clamp((sdroundrect(pt, extent, radius) + feather*0.5) / feather, 0.0, 1.0);\n"
+	  "   vec4 color = mix(innerCol,outerCol,d);\n"
+	  "   // Combine alpha\n"
+	  "   float scissor = scissorMask(fpos);\n"
+	  "   color *= strokeAlpha * scissor;\n"
+	  "   result = color;\n"
+	  " } else if (type == 1) {   // Image\n"
+	  "   strokeAlpha = strokeMask();\n"
+	  "   if (strokeAlpha < strokeThr) discard;\n"
+#if BLUELAB_COLORMAP
+	  "if (useColormap > 0.5) strokeAlpha = 1.0;\n"
+#endif
+	  "   // Calculate color fron texture\n"
+	  "   vec2 pt = (paintMat * vec3(fpos,1.0)).xy / extent;\n"
+	  "#ifdef NANOVG_GL3\n"
+	  "   vec4 color = texture(tex, pt);\n"
+	  "#else\n"
+	  "   vec4 color = texture2D(tex, pt);\n"
+	  "#endif\n"
+	  "   if (texType == 1) color = vec4(color.xyz*color.w,color.w);"
+	  "   if (texType == 2) color = vec4(color.x);"
+	  "   // Apply color tint and alpha.\n"
+	  "   color *= innerCol;\n"
+	  "   // Combine alpha\n"
+	  "   float scissor = scissorMask(fpos);\n"
+	  "   color *= strokeAlpha * scissor;\n"
+	  "   result = color;\n"
+	  " } else if (type == 2) {   // Stencil fill\n"
+	  "   result = vec4(1,1,1,1);\n"
+	  " } else if (type == 3) {   // Textured tris\n"
+	  "#ifdef NANOVG_GL3\n"
+	  "   vec4 color = texture(tex, ftcoord);\n"
+	  "#else\n"
+	  "   vec4 color = texture2D(tex, ftcoord);\n"
+	  "#endif\n"
+	  "   if(color.x < 0.02) discard;\n"
+	  "   strokeAlpha = strokeMask();\n"
+#if BLUELAB_COLORMAP
+	  "if (useColormap > 0.5) strokeAlpha = 1.0;\n"
+#endif
+	  "   if (strokeAlpha < strokeThr) discard;\n"
+	  "   float scissor = scissorMask(fpos);\n"
+	  "   color = vec4(color.x);"
+	  "   color *= scissor;\n"
+	  "   result = color * innerCol;\n"
+	  " }\n"
 #if BLUELAB_COLORMAP
 	  "   if (useColormap > 0.5) {\n"
 	  "	vec2 ct = vec2(result.x, 0.0);\n"
@@ -710,12 +834,12 @@ static int glnvg__renderCreate(void* uptr)
 	  "   }\n"
 #endif
 	  "#ifdef NANOVG_GL3\n"
-	  "	outColor = result;\n"
-		"#else\n"
-		"	gl_FragColor = result;\n"
-		"#endif\n"
-		"}\n";
-
+	  " outColor = result;\n"
+	  "#else\n"
+	  " gl_FragColor = result;\n"
+	  "#endif\n"
+	  "}\n";
+	
 	glnvg__checkError(gl, "init");
 
 	if (gl->flags & NVG_ANTIALIAS) {
@@ -745,7 +869,8 @@ static int glnvg__renderCreate(void* uptr)
 
 	// Some platforms does not allow to have samples to unset textures.
 	// Create empty one which is bound when there's no texture specified.
-	gl->dummyTex = glnvg__renderCreateTexture(gl, NVG_TEXTURE_ALPHA, 1, 1, 0, NULL);
+	// awtk
+	//gl->dummyTex = glnvg__renderCreateTexture(gl, NVG_TEXTURE_ALPHA, 1, 1, 0, NULL);
 
 	glnvg__checkError(gl, "create done");
 
@@ -754,7 +879,8 @@ static int glnvg__renderCreate(void* uptr)
 	return 1;
 }
 
-static int glnvg__renderCreateTexture(void* uptr, int type, int w, int h, int imageFlags, const unsigned char* data)
+static int glnvg__renderCreateTexture(void* uptr, int type, int w, int h, int stride, int imageFlags,
+				      const unsigned char* data)
 {
 	GLNVGcontext* gl = (GLNVGcontext*)uptr;
 	GLNVGtexture* tex = glnvg__allocTexture(gl);
@@ -801,34 +927,19 @@ static int glnvg__renderCreateTexture(void* uptr, int type, int w, int h, int im
 
 #if defined (NANOVG_GL2)
 	// GL 1.4 and later has support for generating mipmaps using a tex parameter.
-	// #bluelab
-	/* if (imageFlags & NVG_IMAGE_GENERATE_MIPMAPS) {
+	 if (imageFlags & NVG_IMAGE_GENERATE_MIPMAPS) {
 		glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, GL_TRUE);
 	}
 #endif
 
-	if (type == NVG_TEXTURE_RGBA)
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
-	else
-#if defined(NANOVG_GLES2) || defined (NANOVG_GL2)
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE, w, h, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, data);
-#elif defined(NANOVG_GLES3)
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_R8, w, h, 0, GL_RED, GL_UNSIGNED_BYTE, data);
-#else
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, w, h, 0, GL_RED, GL_UNSIGNED_BYTE, data);
-#endif
-	*/
-
-	// #bluelab: this part of code, copied from NikoLib, is maybe not exact
-	// (check the original commented code above)
 #if BLUELAB_COLORMAP
 	if ((imageFlags & NVG_IMAGE_ONE_FLOAT_FORMAT) == 0)
-	  {
-#endif //BLUELAB_COLORMAP
+    {
+#endif
 	    if (type == NVG_TEXTURE_RGBA)
 	      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
 	    else
-#if defined(NANOVG_GLES2)
+#if defined(NANOVG_GLES2) || defined (NANOVG_GL2)
 	      glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE, w, h, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, data);
 #elif defined(NANOVG_GLES3)
 	    glTexImage2D(GL_TEXTURE_2D, 0, GL_R8, w, h, 0, GL_RED, GL_UNSIGNED_BYTE, data);
@@ -837,25 +948,20 @@ static int glnvg__renderCreateTexture(void* uptr, int type, int w, int h, int im
 #endif // NANOVG_GLES2
 	    
 #if BLUELAB_COLORMAP
-	  } else
-	  {
-#ifndef WIN32 // Apple
+    }
+    else
+    {
+#ifdef  __APPLE__ // Apple
 	    // As it should be: float format, 1 component
 	    glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, w, h, 0, GL_RED, GL_FLOAT, data);
-#else
-	    // On Windows, GL_R32F/GL_FLOAT seem unsupported
-	    // So pass the data as RGBA (it works)
-	    
-	    // With this line, we must make nvgUpdateImage() after each nvgCreateImage()
-	    //glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
-	    
+#elif (defined WIN32)
 	    // This line is better, no need to call nvgUpdateImage() after nvgCreateImage()
 	    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RED, GL_FLOAT, data);
-#endif // WIN32
+#else // Linux
+	    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RED, GL_FLOAT, data);
+#endif
 	  }
 #endif // BLUELAB_COLORMAP
-
-#endif // NANOVG_GL2 ?
     
 	if (imageFlags & NVG_IMAGE_GENERATE_MIPMAPS) {
 		if (imageFlags & NVG_IMAGE_NEAREST) {
@@ -887,7 +993,6 @@ static int glnvg__renderCreateTexture(void* uptr, int type, int w, int h, int im
 	else
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
-	//#if BLUELAB_COLORMAP...
 	glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
             
 #ifndef NANOVG_GLES2
@@ -939,14 +1044,26 @@ static int glnvg__renderUpdateTexture(void* uptr, int image, int x, int y, int w
 	x = 0;
 	w = tex->width;
 #endif
-
-	if (tex->type == NVG_TEXTURE_RGBA)
-		glTexSubImage2D(GL_TEXTURE_2D, 0, x,y, w,h, GL_RGBA, GL_UNSIGNED_BYTE, data);
-	else
+    
+#if BLUELAB_COLORMAP
+    if ((tex->flags & NVG_IMAGE_ONE_FLOAT_FORMAT) == 0)
+    {
+#endif
+        if (tex->type == NVG_TEXTURE_RGBA)
+            glTexSubImage2D(GL_TEXTURE_2D, 0, x,y, w,h, GL_RGBA, GL_UNSIGNED_BYTE, data);
+        else
 #if defined(NANOVG_GLES2) || defined(NANOVG_GL2)
-		glTexSubImage2D(GL_TEXTURE_2D, 0, x,y, w,h, GL_LUMINANCE, GL_UNSIGNED_BYTE, data);
+            glTexSubImage2D(GL_TEXTURE_2D, 0, x,y, w,h, GL_LUMINANCE, GL_UNSIGNED_BYTE, data);
 #else
-		glTexSubImage2D(GL_TEXTURE_2D, 0, x,y, w,h, GL_RED, GL_UNSIGNED_BYTE, data);
+        glTexSubImage2D(GL_TEXTURE_2D, 0, x,y, w,h, GL_RED, GL_UNSIGNED_BYTE, data);
+#endif
+        
+#if BLUELAB_COLORMAP
+    }
+    else
+    {
+        glTexSubImage2D(GL_TEXTURE_2D, 0, x,y, w,h, GL_RED, GL_FLOAT, data);
+    }
 #endif
 
 	glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
@@ -1078,15 +1195,24 @@ static void glnvg__setUniforms(GLNVGcontext* gl, int uniformOffset, int image)
 	glUniform4fv(gl->shader.loc[GLNVG_LOC_FRAG], NANOVG_GL_UNIFORMARRAY_SIZE, &(frag->uniformArray[0][0]));
 #endif
 
+	// awtk
 	if (image != 0) {
-		tex = glnvg__findTexture(gl, image);
+	  GLNVGtexture* tex = glnvg__findTexture(gl, image);
+	  glnvg__bindTexture(gl, tex != NULL ? tex->tex : 0);
+	  glnvg__checkError(gl, "tex paint tex");
+	} else {
+	  glnvg__bindTexture(gl, 0);
 	}
-	// If no image is set, use empty texture
-	if (tex == NULL) {
-		tex = glnvg__findTexture(gl, gl->dummyTex);
-	}
-	glnvg__bindTexture(gl, tex != NULL ? tex->tex : 0);
-	glnvg__checkError(gl, "tex paint tex");
+	
+	//if (image != 0) {
+	//  tex = glnvg__findTexture(gl, image);
+	//}
+	//// If no image is set, use empty texture
+	//if (tex == NULL) {
+	//  tex = glnvg__findTexture(gl, gl->dummyTex);
+	//}
+	//glnvg__bindTexture(gl, tex != NULL ? tex->tex : 0);
+	//glnvg__checkError(gl, "tex paint tex");
 }
 
 static void glnvg__renderViewport(void* uptr, float width, float height, float devicePixelRatio)
@@ -1163,9 +1289,6 @@ static void glnvg__convexFill(GLNVGcontext* gl, GLNVGcall* call)
     
         glUniform1i(gl->shader.loc[GLNVG_LOC_COLORMAP_TEX], 1);
         glUniform1f(gl->shader.loc[GLNVG_LOC_USE_COLORMAP], useColormap);
-
-        glUniform1i(gl->shader.loc[GLNVG_LOC_COLORMAP_TEX], 1);
-        glUniform1f(gl->shader.loc[GLNVG_LOC_USE_COLORMAP], useColormap);
     }
 #endif
 
@@ -1176,6 +1299,18 @@ static void glnvg__convexFill(GLNVGcontext* gl, GLNVGcall* call)
 			glDrawArrays(GL_TRIANGLE_STRIP, paths[i].strokeOffset, paths[i].strokeCount);
 		}
 	}
+    
+   /* if (gl->flags & NVG_ANTIALIAS) {
+        
+        // For Spectrogram, glsl colormap, and two images overlapping
+        // => There was black borders on the images to to aa
+        if (!(gl->flags & NVG_NIKO_ANTIALIAS_SKIP_FRINGES))
+        {
+            // Draw fringes
+            for (i = 0; i < npaths; i++)
+                glDrawArrays(GL_TRIANGLE_STRIP, paths[i].strokeOffset, paths[i].strokeCount);
+        }
+    }*/
 
 #if BLUELAB_COLORMAP
 	//glUniform1i(gl->shader.loc[GLNVG_LOC_COLORMAP_TEX], 0);
@@ -1467,6 +1602,62 @@ static void glnvg__vset(NVGvertex* vtx, float x, float y, float u, float v)
 	vtx->v = v;
 }
 
+static int glnvg__pathIsRect(const NVGpath* path) {
+  const NVGvertex* verts = path->fill;
+  if (path->nfill == 4) {
+    int ret1 = (verts[0].y == verts[1].y && verts[1].x == verts[2].x && verts[2].y == verts[3].y &&
+                verts[3].x == verts[0].x);
+    
+    int ret2 = (verts[0].x == verts[1].x && verts[1].y == verts[2].y && verts[2].x == verts[3].x &&
+                verts[3].y == verts[0].y);
+
+    if (ret1 || ret2) {
+      return 1;
+    }
+  }
+  
+  return 0;
+}
+
+static int glnvg_getSupportFastDraw(GLNVGcontext* gl, NVGscissor* scissor) {
+  if(gl->g_xform[0] == 1.0f && gl->g_xform[1] == 0.0f 
+     && gl->g_xform[2] == 0.0f && gl->g_xform[3] == 1.0f
+     && scissor->xform[0] == 1.0f && scissor->xform[1] == 0.0f 
+     && scissor->xform[2] == 0.0f && scissor->xform[3] == 1.0f) {
+    return 1;
+  } else  {
+    return 0;
+  }
+}
+
+static int glnvg__VertsInScissor(const NVGvertex* verts, int nr, NVGscissor* scissor) {
+  int32_t i = 0;
+  float cx = scissor->xform[4];
+  float cy = scissor->xform[5];
+  float hw = scissor->extent[0];
+  float hh = scissor->extent[1];
+  
+  float l = cx - hw;
+  float t = cy - hh;
+  float r = l + 2 * hw;
+  float b = t + 2 * hh;
+
+  for (i = 0; i < nr; i++) {
+    const NVGvertex* iter = verts + i;
+    int x = iter->x;
+    int y = iter->y;
+    if (x < l || x > r || y < t || y > b) {
+      return 0;
+    }
+  }
+  
+  return 1;
+}
+
+static int glnvg__pathInScissor(const NVGpath* path, NVGscissor* scissor) {
+  return glnvg__VertsInScissor(path->fill, path->nfill, scissor);
+}
+
 #if !BLUELAB_COLORMAP
 static void glnvg__renderFill(void* uptr, NVGpaint* paint, NVGcompositeOperationState compositeOperation, NVGscissor* scissor, float fringe,
 			      const float* bounds, const NVGpath* paths, int npaths)
@@ -1475,7 +1666,7 @@ static void glnvg__renderFill(void* uptr, NVGpaint* paint, NVGcompositeOperation
 				const float* bounds, const NVGpath* paths, int npaths,
 				int colormapId)
 #endif
-{
+/*{
 	GLNVGcontext* gl = (GLNVGcontext*)uptr;
 	GLNVGcall* call = glnvg__allocCall(gl);
 	NVGvertex* quad;
@@ -1558,8 +1749,113 @@ error:
 	// Roll back the last call to prevent drawing it.
 	if (gl->ncalls > 0) gl->ncalls--;
 }
+*/
+{
+  int support_fast_draw = 0;
+  int is_gradient = memcmp(&(paint->innerColor), &(paint->outerColor), sizeof(paint->outerColor));
+  
+  GLNVGcontext* gl = (GLNVGcontext*)uptr;
+  GLNVGcall* call = glnvg__allocCall(gl);
+  NVGvertex* quad;
+  GLNVGfragUniforms* frag = NULL;
+  int i, maxverts, offset;
+  
+  if (call == NULL) return;
+  
+  call->type = GLNVG_FILL;
+  call->triangleCount = 4;
+  call->pathOffset = glnvg__allocPaths(gl, npaths);
+  if (call->pathOffset == -1) goto error;
+  call->pathCount = npaths;
+  call->image = paint->image;
+  call->blendFunc = glnvg__blendCompositeOperation(compositeOperation);
 
-static void glnvg__renderStroke(void* uptr, NVGpaint* paint, NVGcompositeOperationState compositeOperation, NVGscissor* scissor, float fringe,
+#if BLUELAB_COLORMAP
+  call->colormapId = colormapId;
+#endif
+    
+  if (npaths == 1 && paths[0].convex) {
+    call->type = GLNVG_CONVEXFILL;
+    call->triangleCount = 0;  // Bounding box fill quad not needed for convex fill
+  }
+
+  // Allocate vertices for all the paths.
+  maxverts = glnvg__maxVertCount(paths, npaths) + call->triangleCount;
+  offset = glnvg__allocVerts(gl, maxverts);
+  if (offset == -1) goto error;
+
+  for (i = 0; i < npaths; i++) {
+    GLNVGpath* copy = &gl->paths[call->pathOffset + i];
+    const NVGpath* path = &paths[i];
+    memset(copy, 0, sizeof(GLNVGpath));
+    if (path->nfill > 0) {
+      copy->fillOffset = offset;
+      copy->fillCount = path->nfill;
+      memcpy(&gl->verts[offset], path->fill, sizeof(NVGvertex) * path->nfill);
+      offset += path->nfill;
+      if (npaths == 1) {
+        support_fast_draw = glnvg__pathIsRect(path) && glnvg__pathInScissor(path, scissor) && glnvg_getSupportFastDraw(gl, scissor);
+      }
+    }
+    if (path->nstroke > 0) {
+      copy->strokeOffset = offset;
+      copy->strokeCount = path->nstroke;
+      memcpy(&gl->verts[offset], path->stroke, sizeof(NVGvertex) * path->nstroke);
+      offset += path->nstroke;
+    }
+  }
+
+  // Setup uniforms for draw calls
+  if (call->type == GLNVG_FILL) {
+    // Quad
+    call->triangleOffset = offset;
+    quad = &gl->verts[call->triangleOffset];
+    glnvg__vset(&quad[0], bounds[2], bounds[3], 0.5f, 1.0f);
+    glnvg__vset(&quad[1], bounds[2], bounds[1], 0.5f, 1.0f);
+    glnvg__vset(&quad[2], bounds[0], bounds[3], 0.5f, 1.0f);
+    glnvg__vset(&quad[3], bounds[0], bounds[1], 0.5f, 1.0f);
+
+    call->uniformOffset = glnvg__allocFragUniforms(gl, 2);
+    if (call->uniformOffset == -1) goto error;
+    // Simple shader for stencil
+    frag = nvg__fragUniformPtr(gl, call->uniformOffset);
+    memset(frag, 0, sizeof(*frag));
+    frag->strokeThr = -1.0f;
+    frag->type = NSVG_SHADER_SIMPLE;
+    // Fill shader
+    glnvg__convertPaint(gl, nvg__fragUniformPtr(gl, call->uniformOffset + gl->fragSize), paint,
+                        scissor, fringe, fringe, -1.0f);
+
+  } else {
+    call->uniformOffset = glnvg__allocFragUniforms(gl, 1);
+    if (call->uniformOffset == -1) goto error;
+    // Fill shader
+    frag = nvg__fragUniformPtr(gl, call->uniformOffset);
+    glnvg__convertPaint(gl, nvg__fragUniformPtr(gl, call->uniformOffset), paint, scissor, fringe,
+                        fringe, -1.0f);
+  }
+
+  if (support_fast_draw) {
+    if (paint->image != 0) {
+      frag->type = NSVG_SHADER_FAST_FILLIMG;
+    } else if (!is_gradient) {
+      frag->type = NSVG_SHADER_FAST_FILLCOLOR;
+    }
+  } else {
+    if (paint->image == 0 && !is_gradient) {
+      frag->type = NSVG_SHADER_FILLCOLOR;
+    }
+  }
+  
+  return;
+
+error:
+  // We get here if call alloc was ok, but something else is not.
+  // Roll back the last call to prevent drawing it.
+  if (gl->ncalls > 0) gl->ncalls--;
+}
+
+/*static void glnvg__renderStroke(void* uptr, NVGpaint* paint, NVGcompositeOperationState compositeOperation, NVGscissor* scissor, float fringe,
 								float strokeWidth, const NVGpath* paths, int npaths)
 {
 	GLNVGcontext* gl = (GLNVGcontext*)uptr;
@@ -1614,8 +1910,67 @@ error:
 	// Roll back the last call to prevent drawing it.
 	if (gl->ncalls > 0) gl->ncalls--;
 }
+*/
+static void glnvg__renderStroke(void* uptr, NVGpaint* paint,
+                                NVGcompositeOperationState compositeOperation, NVGscissor* scissor,
+                                float fringe, float strokeWidth, const NVGpath* paths, int npaths) {
+  GLNVGcontext* gl = (GLNVGcontext*)uptr;
+  GLNVGcall* call = glnvg__allocCall(gl);
+  int i, maxverts, offset;
 
-static void glnvg__renderTriangles(void* uptr, NVGpaint* paint, NVGcompositeOperationState compositeOperation, NVGscissor* scissor,
+  if (call == NULL) return;
+
+  call->type = GLNVG_STROKE;
+  call->pathOffset = glnvg__allocPaths(gl, npaths);
+  if (call->pathOffset == -1) goto error;
+  call->pathCount = npaths;
+  call->image = paint->image;
+  call->blendFunc = glnvg__blendCompositeOperation(compositeOperation);
+
+  // Allocate vertices for all the paths.
+  maxverts = glnvg__maxVertCount(paths, npaths);
+  offset = glnvg__allocVerts(gl, maxverts);
+  if (offset == -1) goto error;
+
+  for (i = 0; i < npaths; i++) {
+    GLNVGpath* copy = &gl->paths[call->pathOffset + i];
+    const NVGpath* path = &paths[i];
+    memset(copy, 0, sizeof(GLNVGpath));
+    if (path->nstroke) {
+      copy->strokeOffset = offset;
+      copy->strokeCount = path->nstroke;
+      memcpy(&gl->verts[offset], path->stroke, sizeof(NVGvertex) * path->nstroke);
+      offset += path->nstroke;
+    }
+  }
+
+  if (gl->flags & NVG_STENCIL_STROKES) {
+    // Fill shader
+    call->uniformOffset = glnvg__allocFragUniforms(gl, 2);
+    if (call->uniformOffset == -1) goto error;
+
+    glnvg__convertPaint(gl, nvg__fragUniformPtr(gl, call->uniformOffset), paint, scissor,
+                        strokeWidth, fringe, -1.0f);
+    glnvg__convertPaint(gl, nvg__fragUniformPtr(gl, call->uniformOffset + gl->fragSize), paint,
+                        scissor, strokeWidth, fringe, 1.0f - 0.5f / 255.0f);
+
+  } else {
+    // Fill shader
+    call->uniformOffset = glnvg__allocFragUniforms(gl, 1);
+    if (call->uniformOffset == -1) goto error;
+    glnvg__convertPaint(gl, nvg__fragUniformPtr(gl, call->uniformOffset), paint, scissor,
+                        strokeWidth, fringe, -1.0f);
+  }
+
+  return;
+
+error:
+  // We get here if call alloc was ok, but something else is not.
+  // Roll back the last call to prevent drawing it.
+  if (gl->ncalls > 0) gl->ncalls--;
+}
+
+/*static void glnvg__renderTriangles(void* uptr, NVGpaint* paint, NVGcompositeOperationState compositeOperation, NVGscissor* scissor,
 								   const NVGvertex* verts, int nverts, float fringe)
 {
 	GLNVGcontext* gl = (GLNVGcontext*)uptr;
@@ -1648,6 +2003,55 @@ error:
 	// We get here if call alloc was ok, but something else is not.
 	// Roll back the last call to prevent drawing it.
 	if (gl->ncalls > 0) gl->ncalls--;
+}
+*/
+ // #bluelab: TODO: re-manage fringes / fringe0
+static void glnvg__renderTriangles(void* uptr, NVGpaint* paint,
+                                   NVGcompositeOperationState compositeOperation,
+                                   NVGscissor* scissor, const NVGvertex* verts, int nverts,
+				   float fringe0) {
+  GLNVGcontext* gl = (GLNVGcontext*)uptr;
+  GLNVGcall* call = glnvg__allocCall(gl);
+  GLNVGfragUniforms* frag;
+  float fringe = 1.0f / gl->devicePixelRatio;
+
+  if (call == NULL) return;
+
+  call->type = GLNVG_TRIANGLES;
+  call->image = paint->image;
+  call->blendFunc = glnvg__blendCompositeOperation(compositeOperation);
+
+  // Allocate vertices for all the paths.
+  call->triangleOffset = glnvg__allocVerts(gl, nverts);
+  if (call->triangleOffset == -1) goto error;
+  call->triangleCount = nverts;
+
+  memcpy(&gl->verts[call->triangleOffset], verts, sizeof(NVGvertex) * nverts);
+
+  // Fill shader
+  call->uniformOffset = glnvg__allocFragUniforms(gl, 1);
+  if (call->uniformOffset == -1) goto error;
+  frag = nvg__fragUniformPtr(gl, call->uniformOffset);
+  glnvg__convertPaint(gl, frag, paint, scissor, 1.0f, fringe, -1.0f);
+  if(glnvg__VertsInScissor(verts, nverts, scissor) && glnvg_getSupportFastDraw(gl, scissor)) {
+    frag->type = NSVG_SHADER_FAST_FILLGLYPH;
+  } else {
+    frag->type = NSVG_SHADER_IMG;
+  }
+
+  return;
+
+error:
+  // We get here if call alloc was ok, but something else is not.
+  // Roll back the last call to prevent drawing it.
+  if (gl->ncalls > 0) gl->ncalls--;
+}
+
+static void glnvg__setStateXfrom(void* uptr, float* xform) {
+  GLNVGcontext* gl = (GLNVGcontext*)uptr;
+  if(xform != NULL) {
+    memcpy(gl->g_xform, xform, sizeof(gl->g_xform));
+  }
 }
 
 static void glnvg__renderDelete(void* uptr)
@@ -1713,11 +2117,15 @@ NVGcontext* nvgCreateGLES3(int flags)
 	params.renderStroke = glnvg__renderStroke;
 	params.renderTriangles = glnvg__renderTriangles;
 	params.renderDelete = glnvg__renderDelete;
+	params.setStateXfrom = glnvg__setStateXfrom;
 	params.userPtr = gl;
 	params.edgeAntiAlias = flags & NVG_ANTIALIAS ? 1 : 0;
 
 	gl->flags = flags;
 
+	// #bluelab
+	gl->devicePixelRatio = 1.0;
+	
 	ctx = nvgCreateInternal(&params);
 	if (ctx == NULL) goto error;
 

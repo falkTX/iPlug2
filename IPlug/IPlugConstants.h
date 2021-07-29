@@ -76,7 +76,8 @@ static const double AMP_DB = 8.685889638065036553;
 static const double IAMP_DB = 0.11512925464970;
 static const double DEFAULT_SAMPLE_RATE = 44100.0;
 static const int MAX_PRESET_NAME_LEN = 256;
-#define UNUSED_PRESET_NAME "empty"
+//#define UNUSED_PRESET_NAME "empty"
+#define UNUSED_PRESET_NAME "Empty"
 #define DEFAULT_USER_PRESET_NAME "user preset"
 
 #define AU_MAX_IO_CHANNELS 128
@@ -184,7 +185,8 @@ enum EAPI
   kAPIAAX = 4,
   kAPIAPP = 5,
   kAPIWAM = 6,
-  kAPIWEB = 7
+  kAPIWEB = 7,
+  kAPILV2 = 8
 };
 
 /** @enum EHost
@@ -416,7 +418,10 @@ enum EVirtualKey
   kVK_F24 = 0x87,
 
   kVK_NUMLOCK = 0x90,
-  kVK_SCROLL = 0x91
+  kVK_SCROLL = 0x91,
+
+  // #bluelab
+  kVK_COMMA = 0xBC
 };
 
 END_IPLUG_NAMESPACE

@@ -19,6 +19,8 @@
 #include <cstring>
 #include <stdint.h>
 
+#include "wdltypes.h"
+#include <stdlib.h>
 #include "ptrlist.h"
 
 #include "IPlugParameter.h"
@@ -110,6 +112,16 @@ public:
   {
     Trace(TRACELOC, "idx:%i src:%s\n", paramIdx, ParamSourceStrs[source]);
     OnParamChange(paramIdx);
+
+    // #bluelab
+    // When called from host automation, the controls are not moving according
+    // to the param change (at least on linux)
+    if (source == kHost)
+      // Automations pass here
+    {
+        // Update the corresponding control
+        OnParamChangeUI(paramIdx, source);
+    }
   }
   
   /** Another version of the OnParamChange method without an EParamSource, for backwards compatibility / simplicity.
@@ -290,11 +302,11 @@ public:
 #pragma mark - Editor resizing
   void SetEditorSize(int width, int height) { mEditorWidth = width; mEditorHeight = height; }
   
-  /** /todo
-   * @param widthLo /todo
-   * @param widthHi /todo
-   * @param heightLo /todo
-   * @param heightHi /todo */
+  /** \todo
+   * @param widthLo \todo
+   * @param widthHi \todo
+   * @param heightLo \todo
+   * @param heightHi \todo */
   void SetSizeConstraints(int widthLo, int widthHi, int heightLo, int heightHi)
   {
     mMinWidth = std::min(widthLo, widthHi);
@@ -344,8 +356,12 @@ public:
   virtual int UnserializeEditorState(const IByteChunk& chunk, int startPos)  { return startPos; }
   
   /** Can be used by a host API to inform the editor of screen scale changes
-   *@param scale The new screen scale*/
+   *@param scale The new screen scale */
   virtual void SetScreenScale(double scale) {}
+
+  /** Can be used by a host API to specify event loop integration
+   *@param pMainLoop platform specific pointer */
+  virtual void SetIntegration(void* pMainLoop) {}
 
 protected:
   /** A list of IParam objects. This list is populated in the delegate constructor depending on the number of parameters passed as an argument to MakeConfig() in the plug-in class implementation constructor */
@@ -356,7 +372,7 @@ private:
   /** The height of the plug-in editor in pixels. Can be updated by resizing, exists here for persistance, even if UI doesn't exist */
   int mEditorHeight = 0;
   /** Editor sizing constraints */
-  int mMinWidth, mMaxWidth, mMinHeight, mMaxHeight;
+  int mMinWidth = 10, mMaxWidth = 100000, mMinHeight = 10, mMaxHeight = 100000;
 };
 
 END_IPLUG_NAMESPACE

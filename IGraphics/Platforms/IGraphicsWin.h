@@ -38,6 +38,8 @@ public:
 
   void PlatformResize(bool parentHasResized) override;
 
+  bool GetScreenResolution(int *width, int *height) override;
+  
 #ifdef IGRAPHICS_GL
   void DrawResize() override; // overriden here to deal with GL graphics context capture
 #endif
@@ -159,8 +161,8 @@ private:
 
   EParamEditMsg mParamEditMsg = kNone;
   bool mShowingTooltip = false;
-  float mHiddenCursorX;
-  float mHiddenCursorY;
+  float mHiddenCursorX = 0.f;
+  float mHiddenCursorY = 0.f;
   int mTooltipIdx = -1;
 
   WDL_String mMainWndClassName;

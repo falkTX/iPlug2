@@ -53,9 +53,8 @@ void IPluginBase::GetPluginVersionStr(WDL_String& str) const
 int IPluginBase::GetHostVersion(bool decimal) const
 {
   if (decimal)
-  {
     return GetDecimalVersion(mHostVersion);
-  }
+
   return mHostVersion;
 }
 
@@ -84,18 +83,20 @@ const char* IPluginBase::GetArchStr() const
 {
 #if defined OS_WEB
   return "WASM";
+#elif defined __aarch64__
+  return "arm64";
 #elif defined ARCH_64BIT
-  return "x64";
+  return "x86-64";
 #else
-  return "x86";
+  return "x86-32";
 #endif
 }
 
-void IPluginBase::GetBuildInfoStr(WDL_String& str) const
+void IPluginBase::GetBuildInfoStr(WDL_String& str, const char* date, const char* time) const
 {
   WDL_String version;
   GetPluginVersionStr(version);
-  str.SetFormatted(MAX_BUILD_INFO_STR_LEN, "%s version %s %s (%s), built on %s at %.5s ", GetPluginName(), version.Get(), GetAPIStr(), GetArchStr(), __DATE__, __TIME__);
+  str.SetFormatted(MAX_BUILD_INFO_STR_LEN, "%s %s (%s), built on %s at %.5s ", version.Get(), GetAPIStr(), GetArchStr(), date, time);
 }
 
 #pragma mark -
@@ -277,7 +278,11 @@ void IPluginBase::MakeDefaultPreset(const char* name, int nPresets)
     if (pPreset)
     {
       pPreset->mInitialized = true;
-      strcpy(pPreset->mName, (name ? name : "Empty"));
+
+      // #bluelab
+      memset(pPreset->mName, '\0', MAX_PRESET_NAME_LEN);
+    
+      strcpy(pPreset->mName, (name ? name : UNUSED_PRESET_NAME));
       SerializeState(pPreset->mChunk);
     }
   }
@@ -289,6 +294,10 @@ void IPluginBase::MakePreset(const char* name, ...)
   if (pPreset)
   {
     pPreset->mInitialized = true;
+
+    // #bluelab
+    memset(pPreset->mName, '\0', MAX_PRESET_NAME_LEN);
+      
     strcpy(pPreset->mName, name);
     
     int i, n = NParams();
@@ -311,6 +320,10 @@ void IPluginBase::MakePresetFromNamedParams(const char* name, int nParamsNamed, 
   if (pPreset)
   {
     pPreset->mInitialized = true;
+
+    // #bluelab
+    memset(pPreset->mName, '\0', MAX_PRESET_NAME_LEN);
+      
     strcpy(pPreset->mName, name);
     
     int i = 0, n = NParams();
@@ -353,6 +366,10 @@ void IPluginBase::MakePresetFromChunk(const char* name, IByteChunk& chunk)
   if (pPreset)
   {
     pPreset->mInitialized = true;
+
+    // #bluelab
+    memset(pPreset->mName, '\0', MAX_PRESET_NAME_LEN);
+      
     strcpy(pPreset->mName, name);
     
     pPreset->mChunk.PutChunk(&chunk);
@@ -386,7 +403,7 @@ static void MakeDefaultUserPresetName(WDL_PtrList<IPreset>* pPresets, char* str)
 void IPluginBase::EnsureDefaultPreset()
 {
   TRACE
-  MakeDefaultPreset("Empty", mPresets.GetSize());
+  MakeDefaultPreset(UNUSED_PRESET_NAME, mPresets.GetSize());
 }
 
 void IPluginBase::PruneUninitializedPresets()
@@ -468,13 +485,16 @@ void IPluginBase::ModifyCurrentPreset(const char* name)
   {
     IPreset* pPreset = mPresets.Get(mCurrentPresetIdx);
     pPreset->mChunk.Clear();
-    
+
     Trace(TRACELOC, "%d %s", mCurrentPresetIdx, pPreset->mName);
-    
+
     SerializeState(pPreset->mChunk);
     
     if (CStringHasContents(name))
     {
+      // #bluelab
+      memset(pPreset->mName, '\0', MAX_PRESET_NAME_LEN);
+      
       strcpy(pPreset->mName, name);
     }
   }
@@ -501,7 +521,7 @@ bool IPluginBase::SerializePresets(IByteChunk& chunk) const
   return savedOK;
 }
 
-int IPluginBase::UnserializePresets(IByteChunk& chunk, int startPos)
+int IPluginBase::UnserializePresets(const IByteChunk& chunk, int startPos)
 {
   TRACE
   WDL_String name;
@@ -510,6 +530,10 @@ int IPluginBase::UnserializePresets(IByteChunk& chunk, int startPos)
   {
     IPreset* pPreset = mPresets.Get(i);
     pos = chunk.GetStr(name, pos);
+
+    // #bluelab
+    memset(pPreset->mName, '\0', MAX_PRESET_NAME_LEN);
+    
     strcpy(pPreset->mName, name.Get());
     
     Trace(TRACELOC, "%d %s", i, pPreset->mName);
@@ -572,7 +596,6 @@ void IPluginBase::DumpMakePresetSrc(const char* filename) const
 
 void IPluginBase::DumpMakePresetFromNamedParamsSrc(const char* filename, const char* paramEnumNames[]) const
 {
-  // static bool sDumped = false;
   bool sDumped = false;
   
   if (!sDumped)
@@ -631,54 +654,6 @@ void IPluginBase::DumpPresetBlob(const char* filename) const
   wdl_base64encode(byteStart, buf, pPresetChunk->Size());
   
   fprintf(fp, "%s\", %i);\n", buf, pPresetChunk->Size());
-  fclose(fp);
-}
-
-void IPluginBase::DumpAllPresetsBlob(const char* filename) const
-{
-  FILE* fp = fopen(filename, "w");
-  
-  if (!fp)
-    return;
-  
-  char buf[MAX_BLOB_LENGTH] = "";
-  IByteChunk chnk;
-  
-  for (int i = 0; i< NPresets(); i++)
-  {
-    IPreset* pPreset = mPresets.Get(i);
-    fprintf(fp, "MakePresetFromBlob(\"%s\", \"", pPreset->mName);
-    
-    chnk.Clear();
-    chnk.PutChunk(&(pPreset->mChunk));
-    wdl_base64encode(chnk.GetData(), buf, chnk.Size());
-    
-    fprintf(fp, "%s\", %i);\n", buf, chnk.Size());
-  }
-  
-  fclose(fp);
-}
-
-void IPluginBase::DumpBankBlob(const char* filename) const
-{
-  FILE* fp = fopen(filename, "w");
-  
-  if (!fp)
-    return;
-  
-  char buf[MAX_BLOB_LENGTH] = "";
-  
-  for (int i = 0; i< NPresets(); i++)
-  {
-    IPreset* pPreset = mPresets.Get(i);
-    fprintf(fp, "MakePresetFromBlob(\"%s\", \"", pPreset->mName);
-    
-    IByteChunk* pPresetChunk = &pPreset->mChunk;
-    wdl_base64encode(pPresetChunk->GetData(), buf, pPresetChunk->Size());
-    
-    fprintf(fp, "%s\", %i);\n", buf, pPresetChunk->Size());
-  }
-  
   fclose(fp);
 }
 
@@ -1091,6 +1066,7 @@ bool IPluginBase::LoadBankFromFXB(const char* file)
   return false;
 }
 
+#if 0
 bool IPluginBase::LoadPresetFromVSTPreset(const char* path)
 {
   auto isEqualID = [](const ChunkID id1, const ChunkID id2) {
@@ -1197,7 +1173,9 @@ bool IPluginBase::LoadPresetFromVSTPreset(const char* path)
   
   return false;
 }
+#endif
 
+#if 0
 void IPluginBase::MakeVSTPresetChunk(IByteChunk& chunk, IByteChunk& componentState, IByteChunk& controllerState) const
 {
   WDL_String metaInfo("");
@@ -1249,8 +1227,9 @@ void IPluginBase::MakeVSTPresetChunk(IByteChunk& chunk, IByteChunk& componentSta
   int64_t metaInfoSize = metaInfo.GetLength();
   chunk.Put(&metaInfoSize);
 }
+#endif
 
-bool IPluginBase::SavePresetAsVSTPreset(const char* path) const
+/*bool IPluginBase::SavePresetAsVSTPreset(const char* path) const
 {
   if (path)
   {
@@ -1280,3 +1259,5 @@ bool IPluginBase::SavePresetAsVSTPreset(const char* path) const
   
   return false;
 }
+*/
+

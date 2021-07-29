@@ -114,13 +114,13 @@ public:
   /** Implement this method to respond to a key down event on this control. 
    * @param x The X coordinate of the mouse at the time of this key down event
    * @param y The Y coordinate of the mouse at the time of this key down event
-   * @param key \todo */
+   * @param key Info about the keypress */
   virtual bool OnKeyDown(float x, float y, const IKeyPress& key) { return false; }
 
   /** Implement this method to respond to a key up event on this control.
    * @param x The X coordinate of the mouse at the time of this key down event
    * @param y The Y coordinate of the mouse at the time of this key down event
-   * @param key \todo */
+   * @param key Info about the keypress */
   virtual bool OnKeyUp(float x, float y, const IKeyPress& key) { return false; }
   
   /** Implement this method to respond to a mouseover event on this control. Implementations should call base class, if you wish to use mMouseIsOver.
@@ -330,6 +330,9 @@ public:
    * @param h the new height of the control */
   virtual void SetSize(float w, float h);
 
+  // #bluelab
+  void GetSize(float *w, float *h);
+  
   /** Used internally by the AAX wrapper view interface to set the control parmeter highlight 
    * @param isHighlighted /c true if the control should be highlighted 
    * @param color An integer representing one of three colors that ProTools assigns automated controls */
@@ -374,7 +377,10 @@ public:
   
   /** @return \c true if the control ignores mouse events */
   bool GetIgnoreMouse() const { return mIgnoreMouse; }
-  
+
+  // #bluelab
+  void SetIgnoreMouse(bool flag) { mIgnoreMouse = flag; }
+    
   /** @return \c true if the control should show parameter labels/units e.g. "Hz" in text entry prompts */
   bool GetPromptShowsParamLabel() const { return mPromptShowsParamLabel; }
 
@@ -403,11 +409,11 @@ public:
    * @return \c true if the control is marked dirty. */
   virtual bool IsDirty();
 
-  /** Disable/enable right-clicking the control to prompt for user input /todo check this
-   * @param disable \c true*/
+  /** Disable/enable default prompt for user input
+   * @param disable Set true to disable prompt */
   void DisablePrompt(bool disable) { mDisablePrompt = disable; }
 
-  /** This is an idle call from the GUI thread, only active if USE_IDLE_CALLS is defined. /todo check this */
+  /** This is an idle timer tick call on the GUI thread, only active if USE_IDLE_CALLS is defined */
   virtual void OnGUIIdle() {}
   
   /** Get the control's tag. @see Control Tags */
@@ -466,7 +472,7 @@ public:
    * @param y The Y coordinate for snapping
    * @param direction The direction of the control's travel- horizontal or vertical fader
    * @param bounds The area in which the track of e.g. a slider should be snapped
-   * @param valIdx /todo */
+   * @param valIdx \todo */
   virtual void SnapToMouse(float x, float y, EDirection direction, const IRECT& bounds, int valIdx = -1, double minClip = 0., double maxClip = 1.);
 
   /* if you override this you must call the base implementation, to free mAnimationFunc */
@@ -570,6 +576,7 @@ private:
   IGraphics* mGraphics = nullptr;
   IActionFunction mActionFunc = nullptr;
   IActionFunction mAnimationEndActionFunc = nullptr;
+  IActionFunction mAnimationEndActionFuncQueued = nullptr;
   IAnimationFunction mAnimationFunc = nullptr;
   TimePoint mAnimationStartTime;
   Milliseconds mAnimationDuration;
@@ -585,10 +592,12 @@ private:
  * @{
  */
 
-/** A base interface, to be combined with IControl for bitmap-based controls "IBControls", managing an IBitmap */
+/** A base interface to be combined with IControl for bitmap-based controls "IBControls", managing an IBitmap */
 class IBitmapBase
 {
 public:
+  /** IBitmapBase Constructor
+   * @param The IBitmap to use in this IBControl */
   IBitmapBase(const IBitmap& bitmap)
   : mBitmap(bitmap)
   {
@@ -596,11 +605,16 @@ public:
   
   virtual ~IBitmapBase() {}
   
+  /** Call in the constructor of your IBControl to link the IBitmapBase and IControl
+   * @param pControl Ptr to the control */
   void AttachIControl(IControl* pControl) { mControl = pControl; }
   
+  /** Draw a frame of a multi-frame bitmap based on the IControl value
+   * @param g The IGraphics context */
   void DrawBitmap(IGraphics& g)
   {
     int i = 1;
+
     if (mBitmap.N() > 1)
     {
       i = 1 + int(0.5 + mControl->GetValue() * (double) (mBitmap.N() - 1));
@@ -620,6 +634,10 @@ protected:
 class IVectorBase
 {
 public:
+  /** IVectorBase Constructor
+  * @param style the IVStyle for this control
+  * @param labelInWidget Set \c true If the label should be drawn inside the widget bounds
+  * @param valueInWidget  Set \c true If the value should be drawn inside the widget bounds */
   IVectorBase(const IVStyle& style, bool labelInWidget = false, bool valueInWidget = false)
   : mLabelInWidget(labelInWidget)
   , mValueInWidget(valueInWidget)
@@ -627,23 +645,32 @@ public:
     SetStyle(style);
   }
   
+  /** Call in the constructor of your IVControl to link the IVectorBase and IControl
+   * @param pControl Ptr to the control
+   * @param label CString for the IVControl label */
   void AttachIControl(IControl* pControl, const char* label)
   {
     mControl = pControl;
     mLabelStr.Set(label);
   }
 
+  /** Set one of the IVColors that style the IVControl
+   * @param colorIdx The index of the color to set
+   * @param color The new color */
   void SetColor(EVColor colorIdx, const IColor& color)
   {
     mStyle.colorSpec.mColors[static_cast<int>(colorIdx)] = color;
     mControl->SetDirty(false);
   }
 
+  /** Set the colors of this IVControl
+   * @param spec The new color spec */
   void SetColors(const IVColorSpec& spec)
   {
     mStyle.colorSpec = spec;
   }
 
+  /** Get value of a specific EVColor in the IVControl */ 
   const IColor& GetColor(EVColor color) const
   {
     return mStyle.colorSpec.GetColor(color);
@@ -665,25 +692,35 @@ public:
   void SetSplashPoint(float x, float y) { mSplashPoint.x = x; mSplashPoint.y = y; }
   void SetShape(EVShape shape) { mShape = shape; mControl->SetDirty(false); }
 
+  /** Set the Style of this IVControl
+   * @param style */
   virtual void SetStyle(const IVStyle& style)
   {
     mStyle = style;
     SetColors(style.colorSpec);
   }
 
+  /** Get the style of this IVControl
+   * @return IVStyle */
   IVStyle GetStyle() const { return mStyle; }
   
+  /** Get the adjusted bounds for the widget handle, based on the style settings
+   * @param handleBounds The initial bounds
+   * @return IRECT The adjusted bounds */
   IRECT GetAdjustedHandleBounds(IRECT handleBounds) const
   {
     if(mStyle.drawFrame)
       handleBounds.Pad(- 0.5f * mStyle.frameThickness);
     
     if (mStyle.drawShadows)
-      handleBounds.Alter(mStyle.shadowOffset, 0, -mStyle.shadowOffset, -mStyle.shadowOffset);
+      handleBounds.Offset(mStyle.shadowOffset, 0, -mStyle.shadowOffset, -mStyle.shadowOffset);
     
     return handleBounds;
   }
   
+  /** Get the radius of rounded corners for a rectangle, based on the style roundness factor 
+   * @param bounds The rectangle 
+   * @return float The radius */ 
   float GetRoundedCornerRadius(const IRECT& bounds) const
   {
     if(bounds.W() < bounds.H())
@@ -692,6 +729,9 @@ public:
       return mStyle.roundness * (bounds.H() / 2.f);
   }
   
+  /** Draw a splash effect when a widget handle is clicked (via SplashClickAnimationFunc)
+   * @param g The graphics context
+   * @param clipRegion Optional clip region for the splash */
   void DrawSplash(IGraphics& g, const IRECT& clipRegion = IRECT())
   {
     g.PathClipRegion(clipRegion);
@@ -699,17 +739,20 @@ public:
     g.PathClipRegion(IRECT());
   }
   
+  /** Draw the IVControl background (usually transparent) */
   virtual void DrawBackground(IGraphics& g, const IRECT& rect)
   {
     IBlend blend = mControl->GetBlend();
     g.FillRect(GetColor(kBG), rect, &blend);
   }
   
+  /** Draw the IVControl main widget (override) */
   virtual void DrawWidget(IGraphics& g)
   {
-    // no-op
+    // NO-OP
   }
   
+  /** Draw the IVControl label text */
   virtual void DrawLabel(IGraphics& g)
   {
     if (mLabelBounds.H() && mStyle.showLabel)
@@ -719,6 +762,7 @@ public:
     }
   }
   
+  /** Draw the IVControl value text */
   virtual void DrawValue(IGraphics& g, bool mouseOver)
   {
     if(mouseOver)
@@ -731,6 +775,13 @@ public:
     }
   }
   
+  /** Call one of the DrawPressableShape methods
+   * @param g The IGraphics context
+   * @param shape The shape to draw
+   * @param bounds The bounds in which to draw the shape
+   * @param pressed /c true if shape is pressed
+   * @param mouseOver /c true if the mouse is over the bounds
+   * @param disabled /c true if the shape should be drawn disabled */
   virtual void DrawPressableShape(IGraphics& g, EVShape shape, const IRECT& bounds, bool pressed, bool mouseOver, bool disabled)
   {
     switch (shape)
@@ -754,7 +805,13 @@ public:
     }
   }
 
-  void DrawPressableEllipse(IGraphics&g, const IRECT& bounds, bool pressed, bool mouseOver, bool disabled)
+   /** Draw an ellipse-shaped vector button
+   * @param g The IGraphics context
+   * @param bounds The bounds in which to draw the shape
+   * @param pressed /c true if shape is pressed
+   * @param mouseOver /c true if the mouse is over the bounds
+   * @param disabled /c true if the shape should be drawn disabled */
+  void DrawPressableEllipse(IGraphics& g, const IRECT& bounds, bool pressed, bool mouseOver, bool disabled)
   {
     IRECT handleBounds = bounds;
     IRECT centreBounds = bounds.GetPadded(-mStyle.shadowOffset);
@@ -819,12 +876,13 @@ public:
       g.DrawEllipse(GetColor(kFR), handleBounds, &blend, mStyle.frameThickness);
   }
   
-  /** /todo
-   @param IGraphics&g /todo
-   @param bounds /todo
-   @param pressed /todo
-   @param mouseOver /todo
-   @return /todo */
+  /** Draw a rectangle-shaped vector button
+   * @param g The IGraphics context
+   * @param bounds The bounds in which to draw the shape
+   * @param pressed /c true if shape is pressed
+   * @param mouseOver /c true if the mouse is over the bounds
+   * @param disabled /c true if the shape should be drawn disabled 
+   * @return The handle area of the rectangle */
   IRECT DrawPressableRectangle(IGraphics&g, const IRECT& bounds, bool pressed, bool mouseOver, bool disabled,
                                bool rtl = true, bool rtr = true, bool rbl = true, bool rbr = true)
   {
@@ -959,6 +1017,10 @@ public:
     return handleBounds;
   }
   
+  /** Calculate the rectangles for the various areas, depending on the style
+   * @param parent The parent rectangle to divide up
+   * @param hasHandle Set /c true for a button control to adjust for pressing 
+   * @return IRECT The clickable widget area */
   IRECT MakeRects(const IRECT& parent, bool hasHandle = false)
   {
     IRECT clickableArea = parent;
@@ -1162,7 +1224,7 @@ protected:
   EDirection mDirection;
   double mGearing;
   bool mMouseDown = false;
-  double mMouseDragValue;
+  double mMouseDragValue = 0.0;
 };
 
 /** A base class for slider/fader controls, to handle mouse action and Sender. */
@@ -1649,8 +1711,13 @@ public:
   void OnMouseUp(float x, float y, const IMouseMod& mod) override;
   
   int GetSelectedIdx() const { return int(0.5 + GetValue() * (double) (mNumStates - 1)); }
+  
+  void SetStateDisabled(int stateIdx, bool disabled);
+  void SetAllStatesDisabled(bool disabled);
+  bool GetStateDisabled(int stateIdx) const;
 protected:
   int mNumStates;
+  WDL_TypedBuf<bool> mDisabledState;
   bool mMouseDown = false;
 };
 
@@ -1723,14 +1790,9 @@ public:
 
   void Draw(IGraphics& g) override
   {
-    if(g.HasPathSupport())
-    {
-      g.PathRect(mRECT);
-      g.PathFill(mPattern);
-    }
-    else
-      g.FillRect(mPattern.GetStop(0).mColor, mRECT);
-    
+    g.PathRect(mRECT);
+    g.PathFill(mPattern);
+  
     if(mDrawFrame)
       g.DrawRect(COLOR_LIGHT_GRAY, mRECT);
   }
@@ -1916,7 +1978,11 @@ public:
   // #bluelab
   const IColor &GetTextColor() { return IControl::mText.mFGColor; }
   void SetTextColor(const IColor &color) { IControl::mText.mFGColor = color; };
-  
+
+  // #bluelab
+  const IColor &GetTextBGColor() { return mBGColor; }
+  void SetTextBGColor(const IColor &color) { mBGColor = color; };
+    
 protected:
   WDL_String mStr;
   IColor mBGColor;
@@ -1927,8 +1993,8 @@ protected:
 class IEditableTextControl : public ITextControl
 {
 public:
-  IEditableTextControl(const IRECT& bounds, const char* str, const IText& text = DEFAULT_TEXT)
-  : ITextControl(bounds, str, text)
+  IEditableTextControl(const IRECT& bounds, const char* str, const IText& text = DEFAULT_TEXT, const IColor& BGColor = DEFAULT_BGCOLOR)
+  : ITextControl(bounds, str, text, BGColor)
   {
     mIgnoreMouse = false;
   }

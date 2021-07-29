@@ -11,7 +11,7 @@
 #pragma once
 
 #include "IPlugPlatform.h"
-#include "IGraphicsPathBase.h"
+#include "IGraphics.h"
 
 #include "nanovg.h"
 #include "mutex.h"
@@ -78,7 +78,7 @@ NVGpaint NanoVGPaint(NVGcontext* pContext, const IPattern& pattern, const IBlend
 
 /** IGraphics draw class using NanoVG  
 *   @ingroup DrawClasses */
-class IGraphicsNanoVG : public IGraphicsPathBase
+class IGraphicsNanoVG : public IGraphics
 {
 private:
   class Bitmap;
@@ -117,10 +117,14 @@ public:
   void* GetDrawContext() override { return (void*) mVG; }
     
   IBitmap LoadBitmap(const char* name, int nStates, bool framesAreHorizontal, int targetScale) override;
-  void ReleaseBitmap(const IBitmap& bitmap) override { }; // NO-OP
+  //void ReleaseBitmap(const IBitmap& bitmap) override { }; // NO-OP
   void RetainBitmap(const IBitmap& bitmap, const char * cacheName) override { }; // NO-OP
   bool BitmapExtSupported(const char* ext) override;
 
+  //#bluelab
+  IBitmap CreateBitmap(int w, int h, int bpp, unsigned char *data) override;
+  void ReleaseBitmap(const IBitmap &bmp);
+        
   void DeleteFBO(NVGframebuffer* pBuffer);
   
 protected:

@@ -4,6 +4,8 @@
 
 #include "queue.h"
 
+#include "BLTypes.h"
+
 #ifndef WDL_SIMPLEPITCHSHIFT_SAMPLETYPE
 #define WDL_SIMPLEPITCHSHIFT_SAMPLETYPE double
 #endif

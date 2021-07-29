@@ -31,6 +31,11 @@ void* IGEditorDelegate::OpenWindow(void* pParent)
     mGraphics = std::unique_ptr<IGraphics>(CreateGraphics());
     if (mLastWidth && mLastHeight && mLastScale)
       GetUI()->Resize(mLastWidth, mLastHeight, mLastScale);
+    
+    if (mGraphics && mMainLoop)
+    {
+      mGraphics->SetIntegration(mMainLoop);
+    }
   }
   
   if(mGraphics)
@@ -63,6 +68,14 @@ void IGEditorDelegate::SetScreenScale(double scale)
 {
   if (GetUI())
     mGraphics->SetScreenScale(static_cast<int>(std::round(scale)));
+}
+
+void IGEditorDelegate::SetIntegration(void* pMainLoop)
+{
+  mMainLoop = pMainLoop;
+
+  if(mGraphics)
+    mGraphics->SetIntegration(pMainLoop);
 }
 
 void IGEditorDelegate::SendControlValueFromDelegate(int ctrlTag, double normalizedValue)
@@ -218,3 +231,40 @@ bool IGEditorDelegate::OnKeyUp(const IKeyPress& key)
   else
     return false;
 }
+
+
+// #bluelab
+void IGEditorDelegate::OnParamChangeUI(int paramIdx, EParamSource source)
+{
+  // For the host automation case
+  if (source == kHost)
+  {
+      IGraphics* pGraphics = GetUI();
+      if (pGraphics != NULL)
+      {
+        for (int c = 0; c < pGraphics->NControls(); c++)
+        {
+          IControl* control = pGraphics->GetControl(c);
+          if (control != NULL)
+          {
+            // One control can have several params
+            for (int i = 0; i < control->NVals(); i++)
+            {
+              int idx = control->GetParamIdx(i);
+              if (idx == paramIdx)
+              {
+                double value = GetParam(idx)->GetNormalized();
+                if (!control->IsDisabled()) // Dont animate disabled controls
+                {
+                  control->SetValue(value, i);
+                  control->SetDirty(false);
+                }
+              }
+              // Don't break here in case we have several controls with the same param
+            }
+          }
+        }
+      }
+  }
+}
+    

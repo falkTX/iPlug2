@@ -41,8 +41,8 @@ class IPlugProcessor
 {
 public:
   /** IPlugProcessor constructor
-   * @param config /todo
-   * @param plugAPI /todo */
+   * @param config \todo
+   * @param plugAPI \todo */
   IPlugProcessor(const Config& config, EAPI plugAPI);
   virtual ~IPlugProcessor();
 
@@ -130,7 +130,10 @@ public:
   void GetTimeSig(int& numerator, int& denominator) const { numerator = mTimeInfo.mNumerator; denominator = mTimeInfo.mDenominator; }
 
   // #bluelab
-  bool IsTransportIsRunning() { return mTimeInfo.mTransportIsRunning; }
+  bool IsTransportPlaying() { return mTimeInfo.mTransportIsRunning; }
+  
+  // #bluelab
+  double GetTransportSamplePos();
   
 #pragma mark -
   

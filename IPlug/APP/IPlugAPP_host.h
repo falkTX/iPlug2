@@ -29,7 +29,7 @@
  */
 
 #include <cstdlib>
-#include <string>
+#include <cstring>
 #include <vector>
 #include <limits>
 #include <memory>
@@ -57,6 +57,8 @@
   #define DEFAULT_OUTPUT_DEV "Built-in Output"
 #elif defined(OS_LINUX)
   #include "IPlugSWELL.h"
+  #define DEFAULT_INPUT_DEV "Built-in Input"
+  #define DEFAULT_OUTPUT_DEV "Built-in Output"
 #endif
 
 #include "RtAudio.h"
@@ -73,6 +75,7 @@ const int kNumBufferSizeOptions = 11;
 const std::string kBufferSizeOptions[kNumBufferSizeOptions] = {"32", "64", "96", "128", "192", "256", "512", "1024", "2048", "4096", "8192" };
 const int kDeviceDS = 0; const int kDeviceCoreAudio = 0; const int kDeviceAlsa = 0;
 const int kDeviceASIO = 1; const int kDeviceJack = 1;
+const int kDevicePulse = 2;
 extern UINT gSCROLLMSG;
 
 class IPlugAPP;
@@ -169,8 +172,9 @@ public:
   
   IPlugAPPHost();
   ~IPlugAPPHost();
-  
-  bool OpenWindow(HWND pParent);
+
+  /* pParent is HWND on OSX/Windows but XID on Linux */
+  bool OpenWindow(void *pParent);
   void CloseWindow();
 
   bool Init();
@@ -214,6 +218,16 @@ public:
   static WDL_DLGRET MainDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
   IPlugAPP* GetPlug() { return mIPlug.get(); }
+
+  // #bluelab
+  void SetWindowTitle(const char *title);
+  void ShowMessageBox(const char *message);
+    
+  // To be called internally
+  void SetStartupArgs(int argc, const char **argv);
+  // To be called from the plugin
+  void GetStartupArgs(int *argc, char ***argv);
+      
 private:
   std::unique_ptr<IPlugAPP> mIPlug = nullptr;
   std::unique_ptr<RtAudio> mDAC = nullptr;
@@ -233,7 +247,7 @@ private:
   uint32_t mSamplesElapsed = 0;
   uint32_t mVecWait = 0;
   uint32_t mBufferSize = 512;
-  uint32_t mBufIndex; // index for signal vector, loops from 0 to mSigVS
+  uint32_t mBufIndex = 0; // index for signal vector, loops from 0 to mSigVS
   bool mExiting = false;
   bool mAudioEnding = false;
   bool mAudioDone = false;
@@ -254,7 +268,17 @@ private:
   WDL_PtrList<double> mInputBufPtrs;
   WDL_PtrList<double> mOutputBufPtrs;
 
+#ifdef OS_LINUX
+  /** Site for embedding plug-in */
+  HWND mSite = nullptr;
+  void* mSiteWnd = 0; // XID
+#endif
+  
   friend class IPlugAPP;
+
+  // #bluelab
+  int mStartupArgc;
+  char **mStartupArgv;
 };
 
 END_IPLUG_NAMESPACE

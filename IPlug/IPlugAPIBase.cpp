@@ -65,7 +65,14 @@ void IPlugAPIBase::OnHostRequestingImportantParameters(int count, WDL_TypedBuf<i
 
 void IPlugAPIBase::CreateTimer()
 {
+#if defined(OS_LINUX) && !defined(APP_API) && !defined(VST3_API)
+  auto cb = [this](Timer& timer) { if (!HasUI()) { OnTimer(*mTimer); } };
+  mTimer = std::unique_ptr<Timer>(Timer::Create(cb, IDLE_TIMER_RATE));
+#elif defined(OS_LINUX) && defined(VST3_API)
+  // Do nothing.
+#else
   mTimer = std::unique_ptr<Timer>(Timer::Create(std::bind(&IPlugAPIBase::OnTimer, this, std::placeholders::_1), IDLE_TIMER_RATE));
+#endif
 }
 
 bool IPlugAPIBase::CompareState(const uint8_t* pIncomingState, int startPos) const
@@ -93,15 +100,6 @@ bool IPlugAPIBase::EditorResizeFromUI(int viewWidth, int viewHeight, bool needsP
     return EditorResize(viewWidth, viewHeight);
   else
     return true;
-}
-
-#pragma mark -
-
-void IPlugAPIBase::PrintDebugInfo() const
-{
-  WDL_String buildInfo;
-  GetBuildInfoStr(buildInfo);
-  DBGMSG("\n--------------------------------------------------\n%s\n", buildInfo.Get());
 }
 
 #pragma mark -
@@ -140,8 +138,6 @@ void IPlugAPIBase::DirtyParametersFromUI()
 
 void IPlugAPIBase::SendParameterValueFromAPI(int paramIdx, double value, bool normalized)
 {
-  //TODO: Can we assume that no host is stupid enough to try and set parameters on multiple threads at the same time?
-  // If that is the case then we need a MPSPC queue not SPSC
   if (normalized)
     value = GetParam(paramIdx)->FromNormalized(value);
   
@@ -152,14 +148,42 @@ void IPlugAPIBase::OnTimer(Timer& t)
 {
   if(HasUI())
   {
-    // in VST3, parameter changes are managed by the host
-  #if !defined VST3C_API && !defined VST3P_API && !defined VST3_API
+// VST3 ********************************************************************************
+#if defined VST3P_API || defined VST3_API
+    while (mMidiMsgsFromProcessor.ElementsAvailable())
+    {
+      IMidiMsg msg;
+      mMidiMsgsFromProcessor.Pop(msg);
+#ifdef VST3P_API // distributed
+      TransmitMidiMsgFromProcessor(msg);
+#else
+      SendMidiMsgFromDelegate(msg);
+#endif
+    }
+
+    while (mSysExDataFromProcessor.ElementsAvailable())
+    {
+      SysExData msg;
+      mSysExDataFromProcessor.Pop(msg);
+#ifdef VST3P_API // distributed
+      TransmitSysExDataFromProcessor(msg);
+#else
+      SendSysexMsgFromDelegate({msg.mOffset, msg.mData, msg.mSize});
+#endif
+    }
+// !VST3 ******************************************************************************
+#else
+    // #bluelab: added mutex. We change parameters from timer!
+    // If at the same time parameter is changed from ProcessBlock(), this is bad
+    // (Added for AutoGain)
+    ENTER_PARAMS_MUTEX;
     while(mParamChangeFromProcessor.ElementsAvailable())
     {
       ParamTuple p;
       mParamChangeFromProcessor.Pop(p);
-      SendParameterValueFromDelegate(p.idx, p.value, false); // TODO:  if the parameter hasn't changed maybe we shouldn't do anything?
+      SendParameterValueFromDelegate(p.idx, p.value, false);
     }
+    LEAVE_PARAMS_MUTEX;
     
     while (mMidiMsgsFromProcessor.ElementsAvailable())
     {
@@ -174,27 +198,13 @@ void IPlugAPIBase::OnTimer(Timer& t)
       mSysExDataFromProcessor.Pop(msg);
       SendSysexMsgFromDelegate({msg.mOffset, msg.mData, msg.mSize});
     }
-  #endif
-    
-    // In VST3 midi messages from the processor to the controller, are sent as IMessages and SendMidiMsgFromDelegate gets triggered on the other side's notify
-  #if defined VST3P_API || defined VST3_API
-    while (mMidiMsgsFromProcessor.ElementsAvailable())
-    {
-      IMidiMsg msg;
-      mMidiMsgsFromProcessor.Pop(msg);
-      TransmitMidiMsgFromProcessor(msg);
-    }
-    
-    while (mSysExDataFromProcessor.ElementsAvailable())
-    {
-      SysExData data;
-      mSysExDataFromProcessor.Pop(data);
-      TransmitSysExDataFromProcessor(data);
-    }
-  #endif
+#endif
   }
   
+  // On VST2 Linux we call OnIdle from the VST2 API
+#if !(defined(OS_LINUX) && defined(VST2_API))
   OnIdle();
+#endif
 }
 
 void IPlugAPIBase::SendMidiMsgFromUI(const IMidiMsg& msg)

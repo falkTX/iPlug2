@@ -14,6 +14,15 @@
 
 #include "IPlugStructs.h"
 
+#ifdef OS_LINUX
+#include "IPlugVST3_RunLoop.h"
+#endif
+
+// - FIX: with VST3, close the plug ui, re-open it => crash
+// And also when launching under gdb, it detecs an error when setting the timer
+// - NOTE: tested with Gain12, OnIdle() is not called if we define it
+#define BL_FIX_CRASH_REOPEN_VST3 1
+
 /** IPlug VST3 View  */
 template <class T>
 class IPlugVST3View : public Steinberg::CPluginView
@@ -28,7 +37,7 @@ public:
   
   ~IPlugVST3View()
   {
-    mOwner.release();
+      mOwner.release();
   }
   
   IPlugVST3View(const IPlugVST3View&) = delete;
@@ -44,6 +53,9 @@ public:
       
 #elif defined OS_MAC
       if (strcmp (type, Steinberg::kPlatformTypeNSView) == 0)
+        return Steinberg::kResultTrue;
+#elif defined OS_LINUX
+      if (strcmp (type, Steinberg::kPlatformTypeX11EmbedWindowID) == 0)
         return Steinberg::kResultTrue;
 #endif
     }
@@ -117,6 +129,11 @@ public:
         pView = mOwner.OpenWindow(pParent);
       else // Carbon
         return Steinberg::kResultFalse;
+#elif defined OS_LINUX
+      if (strcmp (type, Steinberg::kPlatformTypeX11EmbedWindowID) == 0)
+        mOwner.OpenWindow(pParent);
+      else
+        return Steinberg::kResultFalse;
 #endif
       return Steinberg::kResultTrue;
     }
@@ -127,7 +144,9 @@ public:
   Steinberg::tresult PLUGIN_API removed() override
   {
     if (mOwner.HasUI())
+    {
       mOwner.CloseWindow();
+    }
     
     return CPluginView::removed();
   }
@@ -137,6 +156,19 @@ public:
     mOwner.SetScreenScale(factor);
 
     return Steinberg::kResultOk;
+  }
+
+  Steinberg::tresult PLUGIN_API setFrame (Steinberg::IPlugFrame* frame) override 
+  { 
+  #ifdef OS_LINUX
+    auto rloop = iplug::IPlugVST3_RunLoop::Create(frame);
+#if !BL_FIX_CRASH_REOPEN_VST3
+    rloop->CreateTimer([&]() { mOwner.OnIdle(); }, 20);
+#endif
+    mOwner.SetIntegration(rloop);
+  #endif
+  
+    return CPluginView::setFrame(frame);
   }
 
   Steinberg::tresult PLUGIN_API queryInterface(const Steinberg::TUID _iid, void** obj) override

@@ -9,22 +9,17 @@ LOG_PATH="$BUILD_DIR"
 LOG_NAME="download.log"
 
 # Basename part of tarballs to download
-CAIRO_VERSION=1.16.0
-FREETYPE_VERSION=freetype-2.9.1
+FREETYPE_VERSION=freetype-2.10.4
 PKGCONFIG_VERSION=pkg-config-0.28
-PIXMAN_VERSION=pixman-0.34.0
 EXPAT_VERSION=expat-2.2.5
 PNG_VERSION=v1.6.35
 ZLIB_VERSION=zlib-1.2.11
-SKIA_VERSION=chrome/m83
+SKIA_VERSION=chrome/m88
 # SKIA_VERSION=master
 
 # URLs where tarballs of releases can be downloaded - no trailing slash
-#CAIRO tarball is compressed using xz which is not available on git-bash shell, so checkout tag via git
-CAIRO_URL=git://git.cairographics.org/git/cairo
 PNG_URL=https://github.com/glennrp/libpng/archive
 ZLIB_URL=https://www.zlib.net
-PIXMAN_URL=https://cairographics.org/releases
 FREETYPE_URL=https://download.savannah.gnu.org/releases/freetype
 SKIA_URL=https://github.com/google/skia.git
 
@@ -66,6 +61,17 @@ spin() {
         printf "\b\b\b\b\b\b"
     done
     printf "    \b\b\b\b"
+}
+
+git_clone_commit() {
+    # git_clone_commit <git_url> <dest_dir> <commit_hash>
+    mkdir -p "$2"
+    pushd "$2"
+    git init
+    git remote add origin "$1"
+    git fetch --depth 1 origin "$3"
+    git checkout FETCH_HEAD
+    popd
 }
 
 cd "${0%/*}"
@@ -149,27 +155,6 @@ fi
 
 #######################################################################
 
-#pixman
-if [ -d "$SRC_DIR/pixman" ]
- then
-   echo "Found pixman"
- else
-  echo
-  echo "Downloading pixman"
-  if [ -e $PIXMAN_VERSION.tar.gz ]
-  then
-    echo "Tarball Present..."
-  else
-    echo "Downloading..."
-    curl -L --progress-bar -O $PIXMAN_URL/$PIXMAN_VERSION.tar.gz
-  fi
-  echo "Unpacking..."
-  tar -xf $PIXMAN_VERSION.tar.gz
-  mv $PIXMAN_VERSION "$SRC_DIR/pixman"
-fi
-
-#######################################################################
-
 #freetype
 if [ -d "$SRC_DIR/freetype" ]
 then
@@ -191,30 +176,14 @@ fi
 
 #######################################################################
 
-#cairo
-if [ -d "$SRC_DIR/cairo" ]
-then
-  echo "Found cairo"
-else
-  echo "Downloading cairo"
-  git clone $CAIRO_URL "$SRC_DIR/cairo"
-  cd "$SRC_DIR/cairo"
-  git checkout -b build $CAIRO_VERSION
-  rm -r -f .git
-  cd "$IGRAPHICS_DEPS_DIR"
-fi
-
-#######################################################################
-
 #skia
 if [ -d "$SRC_DIR/skia" ]
 then
   echo "Found skia"
 else
   echo "Downloading skia"
-  git clone $SKIA_URL "$SRC_DIR/skia"
+  git_clone_commit $SKIA_URL "$SRC_DIR/skia" $SKIA_VERSION
   cd "$SRC_DIR/skia"
-  git checkout $SKIA_VERSION
   echo "Patching skia"
   git apply "$IGRAPHICS_DEPS_DIR/skia.patch" 
   rm -r -f .git

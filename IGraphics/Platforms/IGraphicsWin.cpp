@@ -40,6 +40,14 @@ static double sFPS = 0.0;
 
 #define WM_VBLANK (WM_USER+1)
 
+#ifdef IGRAPHICS_GL3
+typedef HGLRC(WINAPI* PFNWGLCREATECONTEXTATTRIBSARBPROC) (HDC hDC, HGLRC hShareContext, const int* attribList);
+#define WGL_CONTEXT_MAJOR_VERSION_ARB     0x2091
+#define WGL_CONTEXT_MINOR_VERSION_ARB     0x2092
+#define WGL_CONTEXT_PROFILE_MASK_ARB      0x9126
+#define WGL_CONTEXT_CORE_PROFILE_BIT_ARB  0x00000001
+#endif
+
 #pragma mark - Private Classes and Structs
 
 // Fonts
@@ -417,8 +425,16 @@ LRESULT CALLBACK IGraphicsWin::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARA
         {
           std::vector<IMouseInfo> list{ info };
           pGraphics->OnMouseDrag(list);
+            
           if (pGraphics->MouseCursorIsLocked())
-            pGraphics->MoveMouseCursor(pGraphics->mHiddenCursorX, pGraphics->mHiddenCursorY);
+          {
+            const float x = pGraphics->mHiddenCursorX;
+            const float y = pGraphics->mHiddenCursorY;
+            
+            pGraphics->MoveMouseCursor(x, y);
+            pGraphics->mHiddenCursorX = x;
+            pGraphics->mHiddenCursorY = y;
+          }
         }
       }
 
@@ -636,7 +652,7 @@ LRESULT CALLBACK IGraphicsWin::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARA
         pGraphics->Draw(rects);
 
         #ifdef IGRAPHICS_GL
-        SwapBuffers((HDC) pGraphics->mPlatformContext);
+        SwapBuffers((HDC) pGraphics->GetPlatformContext());
         pGraphics->DeactivateGLContext();
         #endif
 
@@ -894,6 +910,21 @@ void IGraphicsWin::PlatformResize(bool parentHasResized)
   }
 }
 
+// #bluelab
+bool 
+IGraphicsWin::GetScreenResolution(int *width, int *height)
+{
+	const HWND hDesktop = GetDesktopWindow();
+
+	RECT desktop;
+	GetWindowRect(hDesktop, &desktop);
+	
+	*width = desktop.right;
+	*height = desktop.bottom;
+
+	return true;
+}
+
 #ifdef IGRAPHICS_GL
 void IGraphicsWin::DrawResize()
 {
@@ -946,14 +977,8 @@ void IGraphicsWin::MoveMouseCursor(float x, float y)
     GetCursorPos(&p);
     ScreenToClient(mPlugWnd, &p);
     
-    mCursorX = p.x / scale;
-    mCursorY = p.y / scale;
-      
-    if (mCursorHidden && !mCursorLock)
-    {
-      mHiddenCursorX = p.x / scale;
-      mHiddenCursorY = p.y / scale;
-    }
+    mHiddenCursorX = mCursorX = p.x / scale;
+    mHiddenCursorY = mCursorY = p.y / scale;
   }
 }
 
@@ -1028,9 +1053,30 @@ void IGraphicsWin::CreateGLContext()
   HDC dc = GetDC(mPlugWnd);
   int fmt = ChoosePixelFormat(dc, &pfd);
   SetPixelFormat(dc, fmt, &pfd);
-
   mHGLRC = wglCreateContext(dc);
   wglMakeCurrent(dc, mHGLRC);
+
+#ifdef IGRAPHICS_GL3
+  // On windows we can't create a 3.3 context directly, since we need the wglCreateContextAttribsARB extension.
+  // We load the extension, then re-create the context.
+  auto wglCreateContextAttribsARB = (PFNWGLCREATECONTEXTATTRIBSARBPROC) wglGetProcAddress("wglCreateContextAttribsARB");
+
+  if (wglCreateContextAttribsARB)
+  {
+    wglDeleteContext(mHGLRC);
+
+    const int attribList[] = {
+      WGL_CONTEXT_MAJOR_VERSION_ARB, 3,
+      WGL_CONTEXT_MINOR_VERSION_ARB, 3,
+      WGL_CONTEXT_PROFILE_MASK_ARB, WGL_CONTEXT_CORE_PROFILE_BIT_ARB,
+      0
+    };
+
+    mHGLRC = wglCreateContextAttribsARB(dc, 0, attribList);
+    wglMakeCurrent(dc, mHGLRC);
+  }
+
+#endif
 
   //TODO: return false if GL init fails?
   if (!gladLoadGL())
@@ -1057,7 +1103,7 @@ void IGraphicsWin::ActivateGLContext()
 
 void IGraphicsWin::DeactivateGLContext()
 {
-  ReleaseDC(mPlugWnd, (HDC) mPlatformContext);
+  ReleaseDC(mPlugWnd, (HDC) GetPlatformContext());
   wglMakeCurrent(mStartHDC, mStartHGLRC); // return current ctxt to start
 }
 #endif
@@ -1613,7 +1659,6 @@ void IGraphicsWin::PromptForFile(WDL_String& fileName, WDL_String& path, EFileAc
       ofn.Flags |= OFN_OVERWRITEPROMPT;
       rc = GetSaveFileNameW(&ofn);
       break;
-            
     case EFileAction::Open:
       default:
       ofn.Flags |= OFN_FILEMUSTEXIST;
@@ -2192,13 +2237,7 @@ void IGraphicsWin::VBlankNotify()
 }
 
 #ifndef NO_IGRAPHICS
-#if defined IGRAPHICS_AGG
-  #include "IGraphicsAGG.cpp"
-#elif defined IGRAPHICS_CAIRO
-  #include "IGraphicsCairo.cpp"
-#elif defined IGRAPHICS_LICE
-  #include "IGraphicsLice.cpp"
-#elif defined IGRAPHICS_SKIA
+#if defined IGRAPHICS_SKIA
   #include "IGraphicsSkia.cpp"
   #ifdef IGRAPHICS_GL
     #include "glad.c"
@@ -2211,8 +2250,6 @@ void IGraphicsWin::VBlankNotify()
 #endif
   #include "nanovg.c"
   #include "glad.c"
-#elif defined IGRAPHICS_D2D
-  #include "IGraphicsD2D.cpp"
 #else
   #error
 #endif

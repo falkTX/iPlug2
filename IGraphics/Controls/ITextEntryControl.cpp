@@ -21,6 +21,9 @@
 #include <codecvt>
 #include <locale>
 
+// FIX: white background , black text!
+#define BL_FIX_HILIGHT_TEXT_ENTRY 1
+
 #ifdef _MSC_VER
 #if (_MSC_VER >= 1900 /* VS 2015*/) && (_MSC_VER < 1920 /* pre VS 2019 */)
 std::locale::id std::codecvt<char16_t, char, _Mbstatet>::id;
@@ -291,7 +294,10 @@ bool ITextEntryControl::OnKeyDown(float x, float y, const IKeyPress& key)
           case IParam::kTypeInt:
           case IParam::kTypeBool:
           {
-            if (key.VK >= '0' && key.VK <= '9' && !key.S)
+            // #bluelab
+            // We can get digits while hitting shift, it depends on the keyboards
+            //if (key.VK >= '0' && key.VK <= '9' && !key.S)
+            if (key.VK >= '0' && key.VK <= '9')
               break;
             if (key.VK >= kVK_NUMPAD0 && key.VK <= kVK_NUMPAD9)
               break;
@@ -302,12 +308,20 @@ bool ITextEntryControl::OnKeyDown(float x, float y, const IKeyPress& key)
           }
           case IParam::kTypeDouble:
           {
-            if (key.VK >= '0' && key.VK <= '9' && !key.S)
+            // #bluelab
+            // We can get digits while hitting shift, it depends on the keyboards
+            //if (key.VK >= '0' && key.VK <= '9' && !key.S)
+            if (key.VK >= '0' && key.VK <= '9')
               break;
             if (key.VK >= kVK_NUMPAD0 && key.VK <= kVK_NUMPAD9)
               break;
             if (stbKey == '+' || stbKey == '-' || stbKey == '.')
-              break;
+                break;
+            // #bluelab
+            // We need comma instead of period on certain regions
+            // NOTE: no need, if we use setlocale(LC_ALL, "C") at plug init.
+            //if (stbKey == '+' || stbKey == '-' || stbKey == '.')
+            //break;
             stbKey = 0;
             break;
           }
@@ -530,7 +544,17 @@ float ITextEntryControl::MeasureCharWidth(char16_t c, char16_t nc)
 void ITextEntryControl::CreateTextEntry(int paramIdx, const IText& text, const IRECT& bounds, int length, const char* str)
 {
   SetTargetAndDrawRECTs(bounds);
+#if !BL_FIX_HILIGHT_TEXT_ENTRY
   SetText(text);
+#else
+  IColor bgColor = mText.mTextEntryBGColor;
+  IColor fgColor = mText.mTextEntryFGColor;
+
+  SetText(text);
+
+  mText.mTextEntryBGColor = bgColor;
+  mText.mTextEntryFGColor = fgColor;
+#endif
   mText.mFGColor = mText.mTextEntryFGColor;
   SetStr(str);
   SelectAll();

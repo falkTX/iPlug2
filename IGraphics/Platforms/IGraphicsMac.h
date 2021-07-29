@@ -67,6 +67,9 @@ public:
 
   float MeasureText(const IText& text, const char* str, IRECT& bounds) const override;
 
+  // #bluelab
+  bool GetScreenResolution(int *width, int *height) override;
+  
 protected:
   void CreatePlatformImGui() override;
 

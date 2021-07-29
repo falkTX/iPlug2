@@ -8426,9 +8426,16 @@ static void *alsaCallbackHandler( void *ptr )
 #include <pulse/simple.h>
 #include <cstdio>
 
-static const unsigned int SUPPORTED_SAMPLERATES[] = { 8000, 16000, 22050, 32000,
-                                                      44100, 48000, 96000, 0};
+// #bluelab
+// Added missing 88200
+// And also 176400 and 192000 just in case 
 
+//static const unsigned int SUPPORTED_SAMPLERATES[] = { 8000, 16000, 22050, 32000,
+//                                                      44100, 48000, 96000, 0};
+static const unsigned int SUPPORTED_SAMPLERATES[] = { 8000, 16000, 22050, 32000,
+                                                      44100, 48000, 88200, 96000,
+                                                      176400, 192000, 0};
+                                                      
 struct rtaudio_pa_format_mapping_t {
   RtAudioFormat rtaudio_format;
   pa_sample_format_t pa_format;

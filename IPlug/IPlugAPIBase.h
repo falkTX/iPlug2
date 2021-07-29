@@ -12,6 +12,7 @@
 
 #include <cstring>
 #include <cstdint>
+#include <atomic>
 #include <memory>
 
 #include "ptrlist.h"
@@ -63,7 +64,10 @@ public:
 
   /* implement this and return true to trigger your custom help info, when someone clicks help in the menu of a standalone app or VST3 plugin */
   virtual bool OnHostRequestingProductHelp() { return false; }
-  
+
+  // #bluelab
+  virtual void OnHostRequestingMenuAction(int actionId) {}
+    
   /** Implement this to do something specific when IPlug becomes aware of the particular host that is hosting the plug-in.
    * The method may get called multiple times. */
   virtual void OnHostIdentified() {}
@@ -107,9 +111,6 @@ public:
   virtual void OnIdle() {}
     
 #pragma mark - Methods you can call - some of which have custom implementations in the API classes, some implemented in IPlugAPIBase.cpp
-  /** Helper method, used to print some info to the console in debug builds. Can be overridden in other IPlugAPIBases, for specific functionality, such as printing UI details. */
-  virtual void PrintDebugInfo() const;
-
   /** SetParameterValue is called from the UI in the middle of a parameter change gesture (possibly via delegate) in order to update a parameter's value.
    * It will update mParams[paramIdx], call InformHostOfParamChange and IPlugAPIBase::OnParamChange();
    * @param paramIdx The index of the parameter that changed
@@ -131,7 +132,8 @@ public:
   /** Get the namespace index of the track that the plug-in is inserted on */
   virtual int GetTrackNamespaceIndex() { return 0; }
 
-  /** /todo */
+  /** In a distributed VST3 or WAM plugin, if you modify the parameters on the UI side (e.g. recall preset in custom preset browser), 
+   * you can call this to update the parameters on the DSP side */
   virtual void DirtyParametersFromUI() override;
 
 #pragma mark - Methods called by the API class - you do not call these methods in your plug-in class
@@ -180,9 +182,11 @@ public:
     mSysExDataFromEditor.Push(data);
   }
 
-  /** /todo */
+  /** Called by the API class to create the timer that pumps the parameter/message queues */
   void CreateTimer();
-  
+
+  void OnTimer(Timer& t);
+
 private:
   /** Implementations call into the APIs resize hooks
    * returns a bool to indicate whether the DAW or plugin class has resized the host window */
@@ -202,13 +206,11 @@ private:
   virtual void InformHostOfParamChange(int paramIdx, double normalizedValue) {}
   
   //DISTRIBUTED ONLY (Currently only VST3)
-  /** /todo */
+  /** \todo */
   virtual void TransmitMidiMsgFromProcessor(const IMidiMsg& msg) {}
   
-  /** /todo */
+  /** \todo */
   virtual void TransmitSysExDataFromProcessor(const SysExData& data) {}
-
-  void OnTimer(Timer& t);
 
 protected:
   WDL_String mParamDisplayStr;

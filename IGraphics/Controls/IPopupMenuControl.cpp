@@ -72,6 +72,10 @@ IPopupMenuControl::IPopupMenuControl(int paramIdx, IText text, IRECT collapsedBo
   
   mText = text;
   mHide = true;
+
+  mDropShadow = true;
+  mBorderColor = COLOR_WHITE;
+  mBorderWidth = 0.0; // No border by default
 }
 
 IPopupMenuControl::~IPopupMenuControl()
@@ -89,8 +93,13 @@ void IPopupMenuControl::Draw(IGraphics& g)
     
     if(pMenuPanel->mShouldDraw)
     {
-      DrawPanelShadow(g, pMenuPanel);
+      if (mDropShadow)
+          DrawPanelShadow(g, pMenuPanel);
       DrawPanelBackground(g, pMenuPanel); 
+
+      // #bluelab
+      //if (mBorderWidth > 0.0)
+      //    DrawPanelBorder(g, pMenuPanel);
       
       int nItems = pMenuPanel->mMenu.NItems();
       int nCells = pMenuPanel->mCellBounds.GetSize();
@@ -156,6 +165,11 @@ void IPopupMenuControl::Draw(IGraphics& g)
         }
       }
     }
+
+    // #bluelab
+    // Draw border over
+    if (mBorderWidth > 0.0)
+      DrawPanelBorder(g, pMenuPanel);
   }
   
   if(mCallOut && mMenuPanels.GetSize())
@@ -165,7 +179,7 @@ void IPopupMenuControl::Draw(IGraphics& g)
     {
       DrawSubMenuCalloutArrow(g, mSubMenuCalloutArrowBounds, &mMenuPanels.Get(0)->mBlend);
     }
-  }
+  }    
 }
 
 void IPopupMenuControl::OnMouseDown(float x, float y, const IMouseMod& mod)
@@ -334,6 +348,21 @@ void IPopupMenuControl::DrawPanelBackground(IGraphics& g, MenuPanel* panel)
   g.FillRoundRect(mPanelBackgroundColor, panel->mTargetRECT, mRoundness, &panel->mBlend);
 }
 
+// #bluelab
+void IPopupMenuControl::DrawPanelBorder(IGraphics& g, MenuPanel* panel)
+{
+    // mTargetRECT = inner area
+    
+    IRECT rect = panel->mTargetRECT;
+    rect.L -= mBorderWidth*0.5;
+    rect.T -= mBorderWidth*0.5;
+    rect.R += mBorderWidth*0.5;
+    rect.B += mBorderWidth*0.5;
+    
+    g.DrawRoundRect(mBorderColor, rect, mRoundness,
+                    &panel->mBlend, mBorderWidth);
+}
+
 void IPopupMenuControl::DrawPanelShadow(IGraphics& g, MenuPanel* panel)
 {
   IRECT inner = panel->mRECT.GetPadded(-mDropShadowSize);
@@ -360,7 +389,7 @@ void IPopupMenuControl::DrawCellText(IGraphics& g, const IRECT& bounds, const IP
     else
       mText.mFGColor = mDisabledItemColor;
   }
-  
+      
   mText.mAlign = EAlign::Near;
   g.DrawText(mText, pItem->GetText(), textRect, pBlend);
 }
@@ -494,7 +523,7 @@ void IPopupMenuControl::GetPanelDimensions(IPopupMenu&menu, float& width, float&
       numSeparators += 1;
     }
   }
-  float numCells = numItems - numSeparators;
+  float numCells = float(numItems - numSeparators);
   panelHeight = (numCells * maxCell.H()) + (numSeparators * mSeparatorSize) + ((numItems - 1) * mCellGap);
   
   width = maxCell.W();

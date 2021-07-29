@@ -112,6 +112,23 @@ class WDL_Mutex {
 #endif
     }
 
+    // #bluelab
+    // Return true if the mutex is acquired
+    bool TryEnter()
+    {
+#ifdef _WIN32
+      int res = TryEnterCriticalSection(&m_cs);
+      return (res != 0);
+#elif defined(WDL_MAC_USE_CARBON_CRITSEC)
+    TODO!
+    // Must use MPWaitOnSemaphore( m_semaphore, kDurationImmediate );
+#else
+      int res = pthread_mutex_trylock(&m_mutex);
+      return (res == 0);
+#endif
+    }
+
+    
   private:
 #ifdef _WIN32
   CRITICAL_SECTION m_cs;

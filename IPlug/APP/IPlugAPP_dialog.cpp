@@ -15,8 +15,11 @@
 #ifdef OS_WIN
 #include "asio.h"
 #define GET_MENU() GetMenu(gHWND)
+//#elif defined OS_MAC || defined OS_LINUX
 #elif defined OS_MAC
 #define GET_MENU() SWELL_GetCurrentMenu()
+#elif defined OS_LINUX
+#define GET_MENU()  GetMenu(hwndDlg)
 #endif
 
 using namespace iplug;
@@ -25,6 +28,47 @@ using namespace iplug;
 #include "IGraphics.h"
 using namespace igraphics;
 #endif
+
+// #bluelab
+// For OnDrop()
+#if defined OS_LINUX && !defined NO_IGRAPHICS
+#include "IGraphics.h"
+using namespace igraphics;
+#endif
+
+// FIX: On Linux, with App, sometimes the window is resized too small in height
+// (the bottom is cropped)
+// This is while adding the menu, we request to grow the height by 17 pixels
+// and if the window is already shown at this moment, sometimes the system
+// does not resize it
+#ifdef __linux__
+#define BL_FIX_LINUX_APP_WIN_SIZE 1
+#endif
+
+/* Workaround for SWELL on Linux (may be on Mac as well, not checked).
+ * CB_RESETCONTENT is not updating ComboBox. In case there was items
+ * but it should be cleared now, last selected item stay visible.
+ * CB_SETCURSEL also does not update combobox in this case.
+ * It can be SWELL does that on perpose...
+ */
+static void _ComboBoxSetCurSel(HWND hwndDlg, int nIDDlgItem, WPARAM wIdx)
+{
+#ifdef OS_LINUX
+  int count = SWELL_CB_GetNumItems(hwndDlg, nIDDlgItem);
+  if ( count == 0 )
+  {
+    HWND hWnd = GetDlgItem(hwndDlg, nIDDlgItem);
+    SetWindowText(hWnd, "");
+    InvalidateRect(hWnd, NULL, false);
+  }
+  else
+  {
+    SendDlgItemMessage(hwndDlg, nIDDlgItem, CB_SETCURSEL, wIdx, 0);
+  }
+#else
+  SendDlgItemMessage(hwndDlg, nIDDlgItem, CB_SETCURSEL, wIdx, 0);
+#endif
+}
 
 // check the input and output devices, find matching srs
 void IPlugAPPHost::PopulateSampleRateList(HWND hwndDlg, RtAudio::DeviceInfo* inputDevInfo, RtAudio::DeviceInfo* outputDevInfo)
@@ -58,61 +102,62 @@ void IPlugAPPHost::PopulateSampleRateList(HWND hwndDlg, RtAudio::DeviceInfo* inp
   str.SetFormatted(32, "%i", mState.mAudioSR);
 
   LRESULT sridx = SendDlgItemMessage(hwndDlg, IDC_COMBO_AUDIO_SR, CB_FINDSTRINGEXACT, -1, (LPARAM) str.Get());
-  SendDlgItemMessage(hwndDlg, IDC_COMBO_AUDIO_SR, CB_SETCURSEL, sridx, 0);
+  _ComboBoxSetCurSel(hwndDlg, IDC_COMBO_AUDIO_SR, sridx);
 }
 
 void IPlugAPPHost::PopulateAudioInputList(HWND hwndDlg, RtAudio::DeviceInfo* info)
 {
-  if(!info->probed)
-    return;
-
-  WDL_String buf;
-
   SendDlgItemMessage(hwndDlg,IDC_COMBO_AUDIO_IN_L,CB_RESETCONTENT,0,0);
   SendDlgItemMessage(hwndDlg,IDC_COMBO_AUDIO_IN_R,CB_RESETCONTENT,0,0);
 
-  int i;
-
-  for (i=0; i<info->inputChannels -1; i++)
+  if(info->probed)
   {
+
+    WDL_String buf;
+
+    int i;
+
+    for (i=0; i<info->inputChannels -1; i++)
+    {
+      buf.SetFormatted(20, "%i", i+1);
+      SendDlgItemMessage(hwndDlg,IDC_COMBO_AUDIO_IN_L,CB_ADDSTRING,0,(LPARAM)buf.Get());
+      SendDlgItemMessage(hwndDlg,IDC_COMBO_AUDIO_IN_R,CB_ADDSTRING,0,(LPARAM)buf.Get());
+    }
+
+    // TEMP
     buf.SetFormatted(20, "%i", i+1);
-    SendDlgItemMessage(hwndDlg,IDC_COMBO_AUDIO_IN_L,CB_ADDSTRING,0,(LPARAM)buf.Get());
     SendDlgItemMessage(hwndDlg,IDC_COMBO_AUDIO_IN_R,CB_ADDSTRING,0,(LPARAM)buf.Get());
   }
 
-  // TEMP
-  buf.SetFormatted(20, "%i", i+1);
-  SendDlgItemMessage(hwndDlg,IDC_COMBO_AUDIO_IN_R,CB_ADDSTRING,0,(LPARAM)buf.Get());
-
-  SendDlgItemMessage(hwndDlg,IDC_COMBO_AUDIO_IN_L,CB_SETCURSEL, mState.mAudioInChanL - 1, 0);
-  SendDlgItemMessage(hwndDlg,IDC_COMBO_AUDIO_IN_R,CB_SETCURSEL, mState.mAudioInChanR - 1, 0);
+  _ComboBoxSetCurSel(hwndDlg, IDC_COMBO_AUDIO_IN_L, mState.mAudioInChanL - 1);
+  _ComboBoxSetCurSel(hwndDlg, IDC_COMBO_AUDIO_IN_R, mState.mAudioInChanR - 1);
 }
 
 void IPlugAPPHost::PopulateAudioOutputList(HWND hwndDlg, RtAudio::DeviceInfo* info)
 {
-  if(!info->probed)
-    return;
-
-  WDL_String buf;
 
   SendDlgItemMessage(hwndDlg,IDC_COMBO_AUDIO_OUT_L,CB_RESETCONTENT,0,0);
   SendDlgItemMessage(hwndDlg,IDC_COMBO_AUDIO_OUT_R,CB_RESETCONTENT,0,0);
 
-  int i;
-
-  for (i=0; i<info->outputChannels -1; i++)
+  if(info->probed)
   {
+
+    WDL_String buf;
+    int i;
+
+    for (i=0; i<info->outputChannels -1; i++)
+    {
+      buf.SetFormatted(20, "%i", i+1);
+      SendDlgItemMessage(hwndDlg,IDC_COMBO_AUDIO_OUT_L,CB_ADDSTRING,0,(LPARAM)buf.Get());
+      SendDlgItemMessage(hwndDlg,IDC_COMBO_AUDIO_OUT_R,CB_ADDSTRING,0,(LPARAM)buf.Get());
+    }
+
+    // TEMP
     buf.SetFormatted(20, "%i", i+1);
-    SendDlgItemMessage(hwndDlg,IDC_COMBO_AUDIO_OUT_L,CB_ADDSTRING,0,(LPARAM)buf.Get());
     SendDlgItemMessage(hwndDlg,IDC_COMBO_AUDIO_OUT_R,CB_ADDSTRING,0,(LPARAM)buf.Get());
   }
-
-  // TEMP
-  buf.SetFormatted(20, "%i", i+1);
-  SendDlgItemMessage(hwndDlg,IDC_COMBO_AUDIO_OUT_R,CB_ADDSTRING,0,(LPARAM)buf.Get());
-
-  SendDlgItemMessage(hwndDlg,IDC_COMBO_AUDIO_OUT_L,CB_SETCURSEL, mState.mAudioOutChanL - 1, 0);
-  SendDlgItemMessage(hwndDlg,IDC_COMBO_AUDIO_OUT_R,CB_SETCURSEL, mState.mAudioOutChanR - 1, 0);
+  _ComboBoxSetCurSel(hwndDlg, IDC_COMBO_AUDIO_OUT_L, mState.mAudioOutChanL - 1);
+  _ComboBoxSetCurSel(hwndDlg, IDC_COMBO_AUDIO_OUT_R, mState.mAudioOutChanR - 1);
 }
 
 // This has to get called after any change to audio driver/in dev/out dev
@@ -130,6 +175,8 @@ void IPlugAPPHost::PopulateDriverSpecificControls(HWND hwndDlg)
     ComboBox_Enable(GetDlgItem(hwndDlg, IDC_COMBO_AUDIO_IN_DEV), TRUE);
     Button_Enable(GetDlgItem(hwndDlg, IDC_BUTTON_OS_DEV_SETTINGS), FALSE);
   }
+#elif defined OS_LINUX
+    EnableWindow(GetDlgItem(hwndDlg, IDC_BUTTON_OS_DEV_SETTINGS), FALSE);
 #endif
 
   int indevidx = 0;
@@ -159,9 +206,9 @@ void IPlugAPPHost::PopulateDriverSpecificControls(HWND hwndDlg)
     SendDlgItemMessage(hwndDlg,IDC_COMBO_AUDIO_IN_DEV,CB_SETCURSEL, outdevidx, 0);
   else
 #endif
-    SendDlgItemMessage(hwndDlg,IDC_COMBO_AUDIO_IN_DEV,CB_SETCURSEL, indevidx, 0);
+    _ComboBoxSetCurSel(hwndDlg, IDC_COMBO_AUDIO_IN_DEV, indevidx);
 
-  SendDlgItemMessage(hwndDlg,IDC_COMBO_AUDIO_OUT_DEV,CB_SETCURSEL, outdevidx, 0);
+  _ComboBoxSetCurSel(hwndDlg, IDC_COMBO_AUDIO_OUT_DEV, outdevidx);
 
   RtAudio::DeviceInfo inputDevInfo;
   RtAudio::DeviceInfo outputDevInfo;
@@ -169,14 +216,14 @@ void IPlugAPPHost::PopulateDriverSpecificControls(HWND hwndDlg)
   if (mAudioInputDevs.size())
   {
     inputDevInfo = mDAC->getDeviceInfo(mAudioInputDevs[indevidx]);
-    PopulateAudioInputList(hwndDlg, &inputDevInfo);
   }
+  PopulateAudioInputList(hwndDlg, &inputDevInfo);
 
   if (mAudioOutputDevs.size())
   {
     outputDevInfo = mDAC->getDeviceInfo(mAudioOutputDevs[outdevidx]);
-    PopulateAudioOutputList(hwndDlg, &outputDevInfo);
   }
+  PopulateAudioOutputList(hwndDlg, &outputDevInfo);
 
   PopulateSampleRateList(hwndDlg, &inputDevInfo, &outputDevInfo);
 }
@@ -289,8 +336,17 @@ void IPlugAPPHost::PopulatePreferencesDialog(HWND hwndDlg)
   PopulateAudioDialogs(hwndDlg);
   PopulateMidiDialogs(hwndDlg);
 }
-#else
-  #error NOT IMPLEMENTED
+#elif defined OS_LINUX
+void IPlugAPPHost::PopulatePreferencesDialog(HWND hwndDlg)
+{
+  SendDlgItemMessage(hwndDlg,IDC_COMBO_AUDIO_DRIVER,CB_ADDSTRING,0,(LPARAM)"Alsa");
+  SendDlgItemMessage(hwndDlg,IDC_COMBO_AUDIO_DRIVER,CB_ADDSTRING,0,(LPARAM)"Jack");
+  SendDlgItemMessage(hwndDlg,IDC_COMBO_AUDIO_DRIVER,CB_ADDSTRING,0,(LPARAM)"Pulse");
+  SendDlgItemMessage(hwndDlg,IDC_COMBO_AUDIO_DRIVER,CB_SETCURSEL, mState.mAudioDriverType, 0);
+
+  PopulateAudioDialogs(hwndDlg);
+  PopulateMidiDialogs(hwndDlg);
+}
 #endif
 
 WDL_DLGRET IPlugAPPHost::PreferencesDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
@@ -466,7 +522,7 @@ WDL_DLGRET IPlugAPPHost::PreferencesDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wPar
             #elif defined OS_MAC
             system("open \"/Applications/Utilities/Audio MIDI Setup.app\"");
             #else
-              #error NOT IMPLEMENTED
+              #warning NOT IMPLEMENTED
             #endif
           break;
 
@@ -534,6 +590,25 @@ static void ClientResize(HWND hWnd, int nWidth, int nHeight)
 extern int GetScaleForHWND(HWND hWnd);
 #endif
 
+// #bluelab
+void
+IPlugAPPHost::SetWindowTitle(const char *title)
+{
+    if (gHWND != NULL)
+        SetWindowText(gHWND, title);
+}
+
+void
+IPlugAPPHost::ShowMessageBox(const char *message)
+{
+    WDL_String info;
+    info.Append(message);
+
+    if (gHWND != NULL)
+        MessageBox(gHWND, info.Get(), PLUG_NAME, MB_OK);
+}
+
+
 //static
 WDL_DLGRET IPlugAPPHost::MainDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
@@ -549,15 +624,31 @@ WDL_DLGRET IPlugAPPHost::MainDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPA
       gHWND = hwndDlg;
       IPlugAPP* pPlug = pAppHost->GetPlug();
 
-      if (!pAppHost->OpenWindow(gHWND))
+#ifdef OS_LINUX
+        RECT r = {0, 0, 100, 100};
+        DBGMSG("APP: Initial socket size: %dx%d\n", r.right, r.bottom);
+        pAppHost->mSite = SWELL_CreateXBridgeWindow(hwndDlg, &pAppHost->mSiteWnd, &r);
+        if(!pAppHost->OpenWindow(pAppHost->mSiteWnd)) {
+#else
+        if(!pAppHost->OpenWindow(gHWND)) {
+#endif
         DBGMSG("couldn't attach gui\n");
+      }
 
       width = pPlug->GetEditorWidth();
       height = pPlug->GetEditorHeight();
-
+      
       ClientResize(hwndDlg, width, height);
-
+#if defined(OS_LINUX)
+      SetWindowPos(pAppHost->mSite, hwndDlg, 0, 0, width, height, SWP_NOZORDER);
+#endif
+      
+      // Don't worry, on Linux, ShowWindow() will be called just after,
+      // after having added the menu
+#if !BL_FIX_LINUX_APP_WIN_SIZE
       ShowWindow(hwndDlg, SW_SHOW);
+#endif
+      
       return 1;
     }
     case WM_DESTROY:
@@ -565,9 +656,9 @@ WDL_DLGRET IPlugAPPHost::MainDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPA
       gHWND = NULL;
       IPlugAPPHost::sInstance = nullptr;
       
-      #ifdef OS_WIN
+      #if defined OS_WIN
       PostQuitMessage(0);
-      #else
+      #elif defined OS_MAC
       SWELL_PostQuitMessage(hwndDlg);
       #endif
 
@@ -592,7 +683,7 @@ WDL_DLGRET IPlugAPPHost::MainDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPA
           if (pluginOpensAboutBox == false)
           {
             WDL_String info;
-            info.Append(PLUG_COPYRIGHT_STR"\nBuilt on " __DATE__);
+            info.Append(PLUG_COPYRIGHT_STR"\nVersion: "PLUG_VERSION_STR"\nBuilt on " __DATE__);
             MessageBox(hwndDlg, info.Get(), PLUG_NAME, MB_OK);
           }
 
@@ -693,6 +784,14 @@ WDL_DLGRET IPlugAPPHost::MainDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPA
           return 0;
         }
 #endif
+      
+        default:
+        {
+            IPlugAPP* pPlug = pAppHost->GetPlug();
+            pPlug->OnHostRequestingMenuAction(LOWORD(wParam));
+   
+            return 0;
+        }
       }
       return 0;
     case WM_GETMINMAXINFO:
@@ -746,6 +845,38 @@ WDL_DLGRET IPlugAPPHost::MainDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPA
         return 0;
       }
     }
+
+    // #bluelab
+    // Maybe this should be implemented in xcbt instead...
+#ifdef OS_LINUX
+    case WM_DROPFILES:
+    {
+      fprintf(stderr, "IPlugAPP_dialog.cpp:WM_DROPFILED\n");
+
+      IPlugAPP* pPlug = pAppHost->GetPlug();
+      //IGEditorDelegate* pPlug = dynamic_cast<IGEditorDelegate*>(pAppHost->GetPlug());
+      if(pPlug)
+      {
+        IGraphics* pGraphics = pPlug->GetUI();
+
+        HDROP hdrop = (HDROP)wParam;
+
+        // #bluelab: manage drag n drop of several files
+        int numFiles = DragQueryFile(hdrop, 0xFFFFFFFF, NULL, 0);
+        for (int i = 0; i < numFiles; i++)
+        {
+          char pathToFile[1025];
+          DragQueryFile(hdrop, i, pathToFile, 1024);
+      
+          POINT point;
+          DragQueryPoint(hdrop, &point);
+        
+          pGraphics->OnDrop(pathToFile, point.x, point.y);
+        }
+      }
+    }
+    break;
+#endif
   }
   return 0;
 }

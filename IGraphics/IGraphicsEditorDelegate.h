@@ -41,7 +41,8 @@ public:
   void* OpenWindow(void* pHandle) final;
   void CloseWindow() final;
   void SetScreenScale(double scale) final;
-  
+  void SetIntegration(void* pMainLoop) final;
+
   bool OnKeyDown(const IKeyPress& key) override;
   bool OnKeyUp(const IKeyPress& key) override;
     
@@ -87,8 +88,11 @@ public:
    * @param startPos The start position in the chunk where parameter values are stored
    * @return The new chunk position (endPos) */
   int UnserializeEditorSize(const IByteChunk& chunk, int startPos);
+
+  // #bluelab
+  virtual void OnParamChangeUI(int paramIdx, EParamSource source = kUnknown) override;
     
-protected:
+protected:  
   std::function<IGraphics*()> mMakeGraphicsFunc = nullptr;
   std::function<void(IGraphics* pGraphics)> mLayoutFunc = nullptr;
 private:
@@ -97,6 +101,7 @@ private:
   int mLastHeight = 0;
   float mLastScale = 0.f;
   bool mClosing = false; // used to prevent re-entrancy on closing
+  void* mMainLoop = nullptr;
 };
 
 END_IGRAPHICS_NAMESPACE

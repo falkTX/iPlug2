@@ -30,6 +30,9 @@ UINT gSCROLLMSG;
 IPlugAPPHost::IPlugAPPHost()
 : mIPlug(MakePlug(InstanceInfo{this}))
 {
+  // #bluelab
+  mStartupArgc = 0;
+  mStartupArgv = NULL;
 }
 
 IPlugAPPHost::~IPlugAPPHost()
@@ -37,12 +40,21 @@ IPlugAPPHost::~IPlugAPPHost()
   mExiting = true;
   
   CloseAudio();
-  
+
   if(mMidiIn)
     mMidiIn->cancelCallback();
 
   if(mMidiOut)
     mMidiOut->closePort();
+
+  // #bluelab
+  if ((mStartupArgc > 0) && (mStartupArgv != NULL))
+  {
+    for (int i = 0; i < mStartupArgc; i++)
+    {
+      free(mStartupArgv[i]);
+    }
+  }
 }
 
 //static
@@ -58,7 +70,7 @@ bool IPlugAPPHost::Init()
     
   if (!InitState())
     return false;
-  
+
   TryToChangeAudioDriverType(); // will init RTAudio with an API type based on gState->mAudioDriverType
   ProbeAudioIO(); // find out what audio IO devs are available and put their IDs in the global variables gAudioInputDevs / gAudioOutputDevs
   InitMidi(); // creates RTMidiIn and RTMidiOut objects
@@ -72,7 +84,7 @@ bool IPlugAPPHost::Init()
   return true;
 }
 
-bool IPlugAPPHost::OpenWindow(HWND pParent)
+bool IPlugAPPHost::OpenWindow(void* pParent)
 {
   return mIPlug->OpenWindow(pParent) != nullptr;
 }
@@ -90,8 +102,10 @@ bool IPlugAPPHost::InitState()
   mINIPath.SetFormatted(MAX_PATH_LEN, "%s\\%s\\", strPath, BUNDLE_NAME);
 #elif defined OS_MAC
   mINIPath.SetFormatted(MAX_PATH_LEN, "%s/Library/Application Support/%s/", getenv("HOME"), BUNDLE_NAME);
+#elif defined OS_LINUX
+  mINIPath.SetFormatted(MAX_PATH_LEN, "%s/.config/%s/", getenv("HOME"), BUNDLE_NAME);
 #else
-  #error NOT IMPLEMENTED
+  #warning NOT IMPLEMENTED
 #endif
 
   struct stat st;
@@ -139,14 +153,16 @@ bool IPlugAPPHost::InitState()
     CreateDirectory(mINIPath.Get(), NULL);
     mINIPath.Append("settings.ini");
     UpdateINI(); // will write file if doesn't exist
-#elif defined OS_MAC
+#elif defined OS_MAC || defined OS_LINUX
     mode_t process_mask = umask(0);
     int result_code = mkdir(mINIPath.Get(), S_IRWXU | S_IRWXG | S_IRWXO);
     umask(process_mask);
 
     if(!result_code)
     {
-      mINIPath.Append("\\settings.ini");
+      // #bluelab FIX: fixes asking twice the popup menu "check your settings"
+      //mINIPath.Append("\\settings.ini");
+      mINIPath.Append("settings.ini");
       UpdateINI(); // will write file if doesn't exist
     }
     else
@@ -154,7 +170,7 @@ bool IPlugAPPHost::InitState()
       return false;
     }
 #else
-  #error NOT IMPLEMENTED
+  #warning NOT IMPLEMENTED
 #endif
   }
 
@@ -201,7 +217,9 @@ void IPlugAPPHost::UpdateINI()
 
 std::string IPlugAPPHost::GetAudioDeviceName(int idx) const
 {
-  return mAudioIDDevNames.at(idx);
+  if ( mAudioIDDevNames.size() )
+    return mAudioIDDevNames.at(idx);
+  return "";
 }
 
 int IPlugAPPHost::GetAudioDeviceIdx(const char* deviceNameToTest) const
@@ -255,8 +273,9 @@ int IPlugAPPHost::GetMIDIPortNumber(ERoute direction, const char* nameToTest) co
 
 void IPlugAPPHost::ProbeAudioIO()
 {
-  std::cout << "\nRtAudio Version " << RtAudio::getVersion() << std::endl;
-
+  // #bluelab
+  std::cerr << "\nRtAudio Version " << RtAudio::getVersion() << std::endl;
+  
   RtAudio::DeviceInfo info;
 
   mAudioInputDevs.clear();
@@ -281,9 +300,15 @@ void IPlugAPPHost::ProbeAudioIO()
     mAudioIDDevNames.push_back(deviceName);
 
     if ( info.probed == false )
-      std::cout << deviceName << ": Probe Status = Unsuccessful\n";
+    {
+      // #bluelab
+      std::cerr << deviceName << ": Probe Status = Unsuccessful\n";
+    }
     else if ( !strcmp("Generic Low Latency ASIO Driver", deviceName.c_str() ))
-      std::cout << deviceName << ": Probe Status = Unsuccessful\n";
+    {
+      // #bluelab
+      std::cerr << deviceName << ": Probe Status = Unsuccessful\n";
+    }
     else
     {
       if(info.inputChannels > 0)
@@ -381,8 +406,15 @@ bool IPlugAPPHost::TryToChangeAudioDriverType()
     mDAC = std::make_unique<RtAudio>(RtAudio::MACOSX_CORE);
   //else
   //mDAC = std::make_unique<RtAudio>(RtAudio::UNIX_JACK);
+#elif defined OS_LINUX
+  if(mState.mAudioDriverType == kDeviceAlsa)
+    mDAC = std::make_unique<RtAudio>(RtAudio::LINUX_ALSA);
+  else if(mState.mAudioDriverType == kDeviceJack)
+    mDAC = std::make_unique<RtAudio>(RtAudio::UNIX_JACK);
+  else
+    mDAC = std::make_unique<RtAudio>(RtAudio::LINUX_PULSE);
 #else
-  #error NOT IMPLEMENTED
+  #warning NOT IMPLEMENTED
 #endif
 
   if(mDAC)
@@ -401,10 +433,10 @@ bool IPlugAPPHost::TryToChangeAudio()
     inputID = GetAudioDeviceIdx(mState.mAudioOutDev.Get());
   else
     inputID = GetAudioDeviceIdx(mState.mAudioInDev.Get());
-#elif defined OS_MAC
+#elif defined OS_MAC || defined OS_LINUX
   inputID = GetAudioDeviceIdx(mState.mAudioInDev.Get());
 #else
-  #error NOT IMPLEMENTED
+  #warning NOT IMPLEMENTED
 #endif
   outputID = GetAudioDeviceIdx(mState.mAudioOutDev.Get());
 
@@ -448,7 +480,8 @@ bool IPlugAPPHost::TryToChangeAudio()
   }
 
   if (failedToFindDevice)
-    MessageBox(gHWND, "Please check your soundcard settings in Preferences", "Error", MB_OK);
+      //MessageBox(gHWND, "Please check your soundcard settings in Preferences", "Error", MB_OK);
+      MessageBox(gHWND, "Please check your soundcard settings in Edit->Audio Settings", "Error", MB_OK);
 
   if (inputID != -1 && outputID != -1)
   {
@@ -480,7 +513,7 @@ bool IPlugAPPHost::SelectMIDIDevice(ERoute direction, const char* pPortName)
       {
         return true;
       }
-  #if defined OS_WIN
+  #if defined OS_WIN || defined OS_LINUX
       else
       {
         mMidiIn->openPort(port-1);
@@ -500,7 +533,7 @@ bool IPlugAPPHost::SelectMIDIDevice(ERoute direction, const char* pPortName)
         return true;
       }
   #else
-   #error NOT IMPLEMENTED
+   #warning NOT IMPLEMENTED
   #endif
     }
   }
@@ -520,7 +553,7 @@ bool IPlugAPPHost::SelectMIDIDevice(ERoute direction, const char* pPortName)
       
       if (port == 0)
         return true;
-#if defined OS_WIN
+#if defined OS_WIN || defined OS_LINUX
       else
       {
         mMidiOut->openPort(port-1);
@@ -540,7 +573,7 @@ bool IPlugAPPHost::SelectMIDIDevice(ERoute direction, const char* pPortName)
         return true;
       }
 #else
-  #error NOT IMPLEMENTED
+  #warning NOT IMPLEMENTED
 #endif
     }
   }
@@ -558,7 +591,7 @@ void IPlugAPPHost::CloseAudio()
     
       while (!mAudioDone)
         Sleep(10);
-      
+
       try
       {
         mDAC->abortStream();
@@ -574,7 +607,7 @@ void IPlugAPPHost::CloseAudio()
 }
 
 bool IPlugAPPHost::InitAudio(uint32_t inId, uint32_t outId, uint32_t sr, uint32_t iovs)
-{  
+{
   CloseAudio();
 
   RtAudio::StreamParameters iParams, oParams;
@@ -602,7 +635,8 @@ bool IPlugAPPHost::InitAudio(uint32_t inId, uint32_t outId, uint32_t sr, uint32_
   mAudioEnding = false;
   mAudioDone = false;
   
-  mIPlug->SetBlockSize(APP_SIGNAL_VECTOR_SIZE);
+  //mIPlug->SetBlockSize(APP_SIGNAL_VECTOR_SIZE);
+  mIPlug->SetBlockSize(mBufferSize); // #bluelab
   mIPlug->SetSampleRate(mSampleRate);
   mIPlug->OnReset();
 
@@ -658,7 +692,11 @@ bool IPlugAPPHost::InitMidi()
   }
 
   mMidiIn->setCallback(&MIDICallback, this);
+
+#if not defined OS_LINUX
+  // AZ: TODO: cryptically segfaulting here...
   mMidiIn->ignoreTypes(false, true, false );
+#endif
 
   return true;
 }
@@ -686,7 +724,7 @@ void ApplyFades(double *pBuffer, int nChans, int nFrames, bool down)
 int IPlugAPPHost::AudioCallback(void* pOutputBuffer, void* pInputBuffer, uint32_t nFrames, double streamTime, RtAudioStreamStatus status, void* pUserData)
 {
   IPlugAPPHost* _this = (IPlugAPPHost*) pUserData;
-
+  
   int nins = _this->GetPlug()->MaxNChannels(ERoute::kInput);
   int nouts = _this->GetPlug()->MaxNChannels(ERoute::kOutput);
   
@@ -703,7 +741,8 @@ int IPlugAPPHost::AudioCallback(void* pOutputBuffer, void* pInputBuffer, uint32_
     
     for (int i = 0; i < nFrames; i++)
     {
-      _this->mBufIndex %= APP_SIGNAL_VECTOR_SIZE;
+      //_this->mBufIndex %= APP_SIGNAL_VECTOR_SIZE;
+      _this->mBufIndex %= _this->mBufferSize; // #bluelab
 
       if (_this->mBufIndex == 0)
       {
@@ -717,9 +756,11 @@ int IPlugAPPHost::AudioCallback(void* pOutputBuffer, void* pInputBuffer, uint32_
           _this->mOutputBufPtrs.Set(c, (pOutputBufferD + (c * nFrames)) + i);
         }
         
-        _this->mIPlug->AppProcess(_this->mInputBufPtrs.GetList(), _this->mOutputBufPtrs.GetList(), APP_SIGNAL_VECTOR_SIZE);
+        //_this->mIPlug->AppProcess(_this->mInputBufPtrs.GetList(), _this->mOutputBufPtrs.GetList(), APP_SIGNAL_VECTOR_SIZE); // origin
+        _this->mIPlug->AppProcess(_this->mInputBufPtrs.GetList(), _this->mOutputBufPtrs.GetList(), _this->mBufferSize); // #bluelab
 
-        _this->mSamplesElapsed += APP_SIGNAL_VECTOR_SIZE;
+        //_this->mSamplesElapsed += APP_SIGNAL_VECTOR_SIZE;
+        _this->mSamplesElapsed += _this->mBufferSize; // #bluelab
       }
       
       for (int c = 0; c < nouts; c++)
@@ -750,7 +791,7 @@ int IPlugAPPHost::AudioCallback(void* pOutputBuffer, void* pInputBuffer, uint32_
 void IPlugAPPHost::MIDICallback(double deltatime, std::vector<uint8_t>* pMsg, void* pUserData)
 {
   IPlugAPPHost* _this = (IPlugAPPHost*) pUserData;
-  
+
   if (pMsg->size() == 0 || _this->mExiting)
     return;
   
@@ -784,3 +825,27 @@ void IPlugAPPHost::ErrorCallback(RtAudioError::Type type, const std::string &err
   //TODO:
 }
 
+// #bluelab
+void
+IPlugAPPHost::SetStartupArgs(int argc, const char **argv)
+{
+    if (argc > 0)
+    {
+        mStartupArgc = argc;
+        mStartupArgv = (char **)malloc(argc*sizeof(char *));
+
+        for (int i = 0; i < argc; i++)
+        {
+            int len = strlen(argv[i]) + 1;
+            mStartupArgv[i] = (char *)malloc(len*sizeof(char));
+            strcpy(mStartupArgv[i], argv[i]);
+        }
+    }
+}
+
+void
+IPlugAPPHost::GetStartupArgs(int *argc, char ***argv)
+{
+    *argc = mStartupArgc;
+    *argv = mStartupArgv;
+}

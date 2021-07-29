@@ -18,8 +18,6 @@
  * Depending on the API macro defined, a different entry point and helper methods are activated
 */
 
-#define PUBLIC_NAME PLUG_NAME
-
 #pragma mark - OS_WIN
 
 #if defined OS_WIN && !defined VST3C_API
@@ -78,7 +76,7 @@
       }
       return 0;
     }
-    
+#ifndef OS_LINUX
     EXPORT int main(int hostCallback)
     {
     #if defined OS_MAC
@@ -87,6 +85,7 @@
       return (int) VSTPluginMain((audioMasterCallback)hostCallback);
     #endif
     }
+#endif
   };
 #pragma mark - VST3 (All)
 #elif defined VST3_API || VST3C_API || defined VST3P_API
@@ -265,6 +264,89 @@
   }
 #elif defined AUv3_API || defined AAX_API || defined APP_API
 // Nothing to do here
+#elif defined LV2_API
+#include "lv2/core/lv2.h"
+
+extern "C" {
+
+#ifdef IPLUG_DSP
+
+static LV2_Handle instantiate(const LV2_Descriptor *descriptor, double rate, const char* bundle_path, const LV2_Feature* const* features)
+{
+  struct InstanceInfo info = { descriptor, rate, bundle_path, features };
+  return static_cast<LV2_Handle>(new PLUG_CLASS_NAME(info));
+}
+
+LV2_SYMBOL_EXPORT const LV2_Descriptor* lv2_descriptor(uint32_t index)
+{
+  return IPlugLV2DSP::descriptor(index, &instantiate);
+}
+#endif
+
+#ifdef IPLUG_EDITOR
+
+static LV2UI_Handle ui_instantiate(const LV2UI_Descriptor*   descriptor,
+                                const char*               plugin_uri,
+                                const char*               bundle_path,
+                                LV2UI_Write_Function      write_function,
+                                LV2UI_Controller          controller,
+                                LV2UI_Widget*             widget,
+                                const LV2_Feature* const* features)
+{
+  struct InstanceInfo info = { descriptor, plugin_uri, bundle_path, write_function, controller, features };
+  auto instance = new PLUG_CLASS_NAME(info);
+  *widget = instance->CreateUI();
+  return static_cast<LV2UI_Handle>(instance);
+}
+
+static void ui_cleanup(LV2UI_Handle instance)
+{
+  delete (static_cast<IPlugLV2Editor*>(instance));
+}
+
+static void ui_port_event(LV2UI_Handle instance, uint32_t port_index, uint32_t buffer_size, uint32_t format, const void*  buffer)
+{
+  (static_cast<IPlugLV2Editor*>(instance))->port_event(port_index, buffer_size, format, buffer);
+}
+
+static int ui_idle(LV2UI_Handle instance)
+{
+  return (static_cast<IPlugLV2Editor*>(instance))->ui_idle();
+}
+
+static const void *ui_extension_data(const char *uri)
+{
+  static const LV2UI_Idle_Interface idle = { ui_idle };
+  if (!strcmp(uri, LV2_UI__idleInterface))
+  {
+    return &idle;
+  }
+  return nullptr;
+}
+
+static const LV2UI_Descriptor ui_descriptor = 
+{
+  PLUG_UI_URI,
+  ui_instantiate,
+  ui_cleanup,
+  ui_port_event,
+  ui_extension_data
+};
+
+LV2_SYMBOL_EXPORT const LV2UI_Descriptor* lv2ui_descriptor(uint32_t index)
+{
+        switch (index) {
+        case 0:
+                return &ui_descriptor;
+        default:
+                return NULL;
+        }
+}
+
+#endif
+
+}
+
 #else
   #error "No API defined!"
 #endif
@@ -327,6 +409,9 @@ Steinberg::FUnknown* MakeProcessor()
   return static_cast<Steinberg::Vst::IAudioProcessor*>(new PLUG_CLASS_NAME(info));
 }
 
+#pragma mark - LV2 processor
+#elif defined LV2_API
+
 #else
 #error "No API defined!"
 #endif
@@ -335,21 +420,21 @@ Steinberg::FUnknown* MakeProcessor()
 
 static Config MakeConfig(int nParams, int nPresets)
 {
-  return Config(nParams, nPresets, PLUG_CHANNEL_IO, PUBLIC_NAME, "", PLUG_MFR, PLUG_VERSION_HEX, PLUG_UNIQUE_ID, PLUG_MFR_ID, PLUG_LATENCY, PLUG_DOES_MIDI_IN, PLUG_DOES_MIDI_OUT, PLUG_DOES_MPE, PLUG_DOES_STATE_CHUNKS, PLUG_TYPE, PLUG_HAS_UI, PLUG_WIDTH, PLUG_HEIGHT, PLUG_HOST_RESIZE, PLUG_MIN_WIDTH, PLUG_MAX_WIDTH, PLUG_MIN_HEIGHT, PLUG_MAX_HEIGHT, BUNDLE_ID);
+  return Config(nParams, nPresets, PLUG_CHANNEL_IO, PLUG_NAME, PLUG_NAME, PLUG_MFR, PLUG_VERSION_HEX, PLUG_UNIQUE_ID, PLUG_MFR_ID, PLUG_LATENCY, PLUG_DOES_MIDI_IN, PLUG_DOES_MIDI_OUT, PLUG_DOES_MPE, PLUG_DOES_STATE_CHUNKS, PLUG_TYPE, PLUG_HAS_UI, PLUG_WIDTH, PLUG_HEIGHT, PLUG_HOST_RESIZE, PLUG_MIN_WIDTH, PLUG_MAX_WIDTH, PLUG_MIN_HEIGHT, PLUG_MAX_HEIGHT, BUNDLE_ID); // TODO: Product Name?
 }
 
 END_IPLUG_NAMESPACE
 
 /*
  #if defined _DEBUG
- #define PUBLIC_NAME APPEND_TIMESTAMP(PLUG_NAME " DEBUG")
+ #define PLUG_NAME APPEND_TIMESTAMP(PLUG_NAME " DEBUG")
  #elif defined TRACER_BUILD
- #define PUBLIC_NAME APPEND_TIMESTAMP(PLUG_NAME " TRACER")
+ #define PLUG_NAME APPEND_TIMESTAMP(PLUG_NAME " TRACER")
  #elif defined TIMESTAMP_PLUG_NAME
  #pragma REMINDER("plug name is timestamped")
- #define PUBLIC_NAME APPEND_TIMESTAMP(PLUG_NAME)
+ #define PLUG_NAME APPEND_TIMESTAMP(PLUG_NAME)
  #else
- #define PUBLIC_NAME PLUG_NAME
+ #define PLUG_NAME PLUG_NAME
  #endif
  */
 

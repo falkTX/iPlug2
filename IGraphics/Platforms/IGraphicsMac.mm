@@ -83,14 +83,7 @@ void IGraphicsMac::CachePlatformFont(const char* fontID, const PlatformFontPtr& 
 
 float IGraphicsMac::MeasureText(const IText& text, const char* str, IRECT& bounds) const
 {
-#ifdef IGRAPHICS_LICE
-  @autoreleasepool
-  {
-    return IGRAPHICS_DRAW_CLASS::MeasureText(text, str, bounds);
-  }
-#else
   return IGRAPHICS_DRAW_CLASS::MeasureText(text, str, bounds);
-#endif
 }
 
 void* IGraphicsMac::OpenWindow(void* pParent)
@@ -362,6 +355,11 @@ void IGraphicsMac::UpdateTooltips()
     return;
   }
 
+  if (GetTooltipControl()) // tooltips handled by IGraphics Control
+  {
+    return;
+  }
+    
   auto func = [this](IControl& control)
   {
     if (control.GetTooltip() && !control.IsHidden())
@@ -642,6 +640,17 @@ void IGraphicsMac::CreatePlatformImGui()
 #endif
 }
 
+// #bluelab
+bool
+IGraphicsMac::GetScreenResolution(int *width, int *height)
+{
+    CGDirectDisplayID display = CGMainDisplayID();
+    *width = CGDisplayPixelsWide(display);
+    *height = CGDisplayPixelsHigh(display);
+    
+    return true;
+}
+
 #ifdef IGRAPHICS_AGG
   #include "IGraphicsAGG.cpp"
 #elif defined IGRAPHICS_CAIRO
@@ -650,8 +659,6 @@ void IGraphicsMac::CreatePlatformImGui()
   #include "IGraphicsNanoVG.cpp"
 #elif defined IGRAPHICS_SKIA
   #include "IGraphicsSkia.cpp"
-#elif defined IGRAPHICS_LICE
-  #include "IGraphicsLice.cpp"
 #else
   #error Either NO_IGRAPHICS or one and only one choice of graphics library must be defined!
 #endif

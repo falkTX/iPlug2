@@ -89,6 +89,9 @@ struct HTREEITEM__;
 
 #ifdef __OBJC__
 
+#ifndef MAC_OS_X_VERSION_10_7
+typedef struct _NSDraggingSession NSDraggingSession;
+#endif
 
 #if MAC_OS_X_VERSION_MAX_ALLOWED <= MAC_OS_X_VERSION_10_4
 typedef int NSInteger;
@@ -140,11 +143,15 @@ typedef struct WindowPropRec
   @public
   bool m_last_dark_mode;
   bool m_ctlcolor_set;
+  bool m_disable_menu;
 }
+- (id) init;
 - (void)setNeedsDisplay:(BOOL)flag;
 - (void)setNeedsDisplayInRect:(NSRect)rect;
 - (void)drawRect:(NSRect)rect;
 - (void)initColors:(int)darkmode; // -1 to not update darkmode but trigger update of colors
+- (void)swellDisableContextMenu:(bool)dis;
+- (NSMenu *)textView:(NSTextView *)view menu:(NSMenu *)menu forEvent:(NSEvent *)event atIndex:(NSUInteger)charIndex;
 @end
 
 @interface SWELL_TabView : NSTabView
@@ -254,6 +261,8 @@ typedef struct WindowPropRec
 -(NSInteger)columnAtPoint:(NSPoint)pt;
 -(int)getColumnPos:(int)idx; // get current position of column that was originally at idx
 -(int)getColumnIdx:(int)pos; // get original index of column that is currently at position
+
+-(BOOL)accessibilityPerformShowMenu;
 @end
 
 @interface SWELL_ImageButtonCell : NSButtonCell
@@ -293,9 +302,13 @@ typedef struct WindowPropRec
 @interface SWELL_TextView : NSTextView
 {
   NSInteger m_tag;
+  bool m_disable_menu;
 }
+-(id)init;
 -(NSInteger) tag;
 -(void) setTag:(NSInteger)tag;
+- (void)swellDisableContextMenu:(bool)dis;
+- (bool)swellWantsContextMenu;
 @end
 
 @interface SWELL_BoxView : NSBox
@@ -548,11 +561,14 @@ HDC SWELL_CreateMetalDC(SWELL_hwndChild *);
   LONG m_style;
   WDL_PtrList<char> *m_ids;
   int m_ignore_selchg; // used to track the last set selection state, to avoid getting feedback notifications
+  bool m_disable_menu;
 }
 -(id)init;
 -(void)dealloc;
 -(void)setSwellStyle:(LONG)style;
 -(LONG)getSwellStyle;
+- (void)swellDisableContextMenu:(bool)dis;
+- (NSMenu *)textView:(NSTextView *)view menu:(NSMenu *)menu forEvent:(NSEvent *)event atIndex:(NSUInteger)charIndex;
 @end
 
 
@@ -1251,6 +1267,7 @@ void swell_scaling_init(bool no_auto_hidpi);
 extern int g_swell_ui_scale;
 extern swell_colortheme g_swell_ctheme;
 extern const char *g_swell_deffont_face;
+HFONT SWELL_GetDefaultFont(void);
 
 #endif
 

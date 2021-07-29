@@ -148,7 +148,7 @@ IPlugVST2::IPlugVST2(const InstanceInfo& info, const Config& config)
   mAEffect.processDoubleReplacing = VSTProcessDoubleReplacing;
   mAEffect.initialDelay = config.latency;
   mAEffect.flags = effFlagsCanReplacing | effFlagsCanDoubleReplacing;
-
+    
   if (config.plugDoesChunks) { mAEffect.flags |= effFlagsProgramChunks; }
   if (LegalIO(1, -1)) { mAEffect.flags |= __effFlagsCanMonoDeprecated; }
   if (config.plugType == EIPlugPluginType::kInstrument) { mAEffect.flags |= effFlagsIsSynth; }
@@ -167,16 +167,29 @@ IPlugVST2::IPlugVST2(const InstanceInfo& info, const Config& config)
 
   SetBlockSize(DEFAULT_BLOCK_SIZE);
 
-  if(config.plugHasUI)
+#if BL_FIX_CRASH_REOPEN
+  mEmbed = NULL;
+#endif
+  
+  if (config.plugHasUI)
   {
     mAEffect.flags |= effFlagsHasEditor;
-    mEditRect.left = mEditRect.top = 0;
-    mEditRect.right = config.plugWidth;
-    mEditRect.bottom = config.plugHeight;
+    UpdateEditRect();
+#ifdef OS_LINUX
+    mEmbed = xcbt_embed_idle();
+#endif
   }
   
   CreateTimer();
 }
+
+#if BL_FIX_CRASH_REOPEN
+IPlugVST2::~IPlugVST2()
+{
+  if (mEmbed != NULL)
+    mEmbed->dtor(mEmbed);
+}
+#endif
 
 void IPlugVST2::BeginInformHostOfParamChange(int idx)
 {
@@ -206,17 +219,21 @@ bool IPlugVST2::EditorResize(int viewWidth, int viewHeight)
   {
     if (viewWidth != GetEditorWidth() || viewHeight != GetEditorHeight())
     {
-      mEditRect.left = mEditRect.top = 0;
-      mEditRect.right = viewWidth;
-      mEditRect.bottom = viewHeight;
-    
+      SetEditorSize(viewWidth, viewHeight);
+      UpdateEditRect();
+  
       resized = mHostCallback(&mAEffect, audioMasterSizeWindow, viewWidth, viewHeight, 0, 0.f);
     }
-    
-    SetEditorSize(viewWidth, viewHeight);
   }
 
   return resized;
+}
+
+void IPlugVST2::UpdateEditRect()
+{
+  mEditRect.left = mEditRect.top = 0;
+  mEditRect.right = GetEditorWidth();
+  mEditRect.bottom = GetEditorHeight();
 }
 
 void IPlugVST2::SetLatency(int samples)
@@ -271,7 +288,9 @@ void IPlugVST2::HostSpecificInit()
   switch (GetHost())
   {
     case kHostAudition:
-    case kHostOrion:
+    // #bluelab
+    // On Orion, this avoided to use sidechain (detected on EQHack)
+    //case kHostOrion:
     case kHostForte:
     case kHostSAWStudio:
       LimitToStereoIO(); //TODO:  is this still necessary?
@@ -450,6 +469,7 @@ VstIntPtr VSTCALLBACK IPlugVST2::VSTDispatcher(AEffect *pEffect, VstInt32 opCode
     {
       if (ptr && _this->HasUI())
       {
+        _this->UpdateEditRect();
         *(ERect**) ptr = &(_this->mEditRect);
         return 1;
       }
@@ -458,7 +478,13 @@ VstIntPtr VSTCALLBACK IPlugVST2::VSTDispatcher(AEffect *pEffect, VstInt32 opCode
     }
     case effEditOpen:
     {
-#if defined OS_WIN || defined ARCH_64BIT
+#if defined OS_LINUX
+      _this->SetIntegration(_this->mEmbed);
+      if (_this->OpenWindow(ptr))
+      {
+        return 1;
+      }
+#elif defined OS_WIN || defined ARCH_64BIT
       if (_this->OpenWindow(ptr))
       {
         return 1;
@@ -477,10 +503,25 @@ VstIntPtr VSTCALLBACK IPlugVST2::VSTDispatcher(AEffect *pEffect, VstInt32 opCode
       if (_this->HasUI())
       {
         _this->CloseWindow();
+        
         return 1;
       }
       return 0;
     }
+#ifdef OS_LINUX
+    case effEditIdle:
+    case __effIdleDeprecated:
+    {
+      if (_this->HasUI())
+      {
+        xcbt_embed_idle_cb(_this->mEmbed);
+      }
+//    #ifdef USE_IDLE_CALLS
+    _this->OnIdle();
+//    #endif
+      return 0;
+    }
+#endif
     case __effIdentifyDeprecated:
     {
       return 'NvEf';  // Random deprecated magic.
@@ -730,6 +771,9 @@ VstIntPtr VSTCALLBACK IPlugVST2::VSTDispatcher(AEffect *pEffect, VstInt32 opCode
             return 1;
           }
         }
+#ifndef OS_LINUX
+        // A bit more should be done on LINUX for REAPER extensions... 
+
         // Support Reaper VST extensions: http://www.reaper.fm/sdk/vst/
         if (!strcmp((char*) ptr, "hasCockosExtensions"))
         {
@@ -741,10 +785,17 @@ VstIntPtr VSTCALLBACK IPlugVST2::VSTDispatcher(AEffect *pEffect, VstInt32 opCode
           _this->mHasVSTExtensions |= VSTEXT_COCOA;
           return 0xbeef0000;
         }
-        else if (!strcmp((char*) ptr, "wantsChannelCountNotifications"))
+        else 
+#endif
+        if (!strcmp((char*) ptr, "wantsChannelCountNotifications"))
         {
           return 1;
         }
+        // #bluelab
+        /*if (!strcmp((char*) ptr, "bypass"))
+          {
+          return 1;
+          }*/
         
         return _this->VSTCanDo((char *) ptr);
       }
@@ -831,6 +882,10 @@ VstIntPtr VSTCALLBACK IPlugVST2::VSTDispatcher(AEffect *pEffect, VstInt32 opCode
     }
     case effSetProgram:
     {
+      // #bluelab
+      // - The test here looks inverted
+      // - Other wdl brands totally comment this test
+
       if (_this->DoesStateChunks() == false)
       {
         _this->ModifyCurrentPreset(); // TODO: test, something is funny about this http://forum.cockos.com/showpost.php?p=485113&postcount=22
@@ -908,6 +963,13 @@ VstIntPtr VSTCALLBACK IPlugVST2::VSTDispatcher(AEffect *pEffect, VstInt32 opCode
     case effGetMidiProgramCategory:
     case effGetCurrentMidiProgram:
     case effSetBypass:
+        /*{
+        // #bluelab
+        // NOTE: some hosts may not support it..
+        // (e.g Reaper and probably many others)
+        _this->SetBypassed((int)value);
+        return 1;
+        }*/
     default:
     {
       return 0;
@@ -924,7 +986,8 @@ void IPlugVST2::VSTPreProcess(SAMPLETYPE** inputs, SAMPLETYPE** outputs, VstInt3
   AttachBuffers(ERoute::kInput, 0, MaxNChannels(ERoute::kInput), inputs, nFrames);
   AttachBuffers(ERoute::kOutput, 0, MaxNChannels(ERoute::kOutput), outputs, nFrames);
 
-  VstTimeInfo* pTI = (VstTimeInfo*) mHostCallback(&mAEffect, audioMasterGetTime, 0, kVstPpqPosValid | kVstTempoValid | kVstBarsValid | kVstCyclePosValid | kVstTimeSigValid, 0, 0);
+  VstTimeInfo* pTI = (VstTimeInfo*) mHostCallback(&mAEffect, audioMasterGetTime, 0,
+                                                  kVstPpqPosValid | kVstTempoValid | kVstBarsValid | kVstCyclePosValid |kVstTimeSigValid, 0, 0);
 
   ITimeInfo timeInfo;
 

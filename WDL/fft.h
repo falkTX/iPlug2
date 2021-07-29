@@ -40,7 +40,7 @@ extern "C" {
 #define WDL_FFT_REALSIZE 8 //4
 #endif
   
- #if WDL_FFT_REALSIZE == 4
+#if WDL_FFT_REALSIZE == 4
 typedef float WDL_FFT_REAL;
 #elif WDL_FFT_REALSIZE == 8
 typedef double WDL_FFT_REAL;

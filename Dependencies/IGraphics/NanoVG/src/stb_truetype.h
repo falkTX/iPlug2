@@ -442,6 +442,8 @@ int main(int arg, char **argv)
 
 #ifdef STBTT_STATIC
 #define STBTT_DEF static
+// awtk
+//#define STBTT_DEF inline
 #else
 #define STBTT_DEF extern
 #endif

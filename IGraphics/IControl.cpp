@@ -36,8 +36,7 @@ void SplashAnimationFunc(IControl* pCaller)
     return;
   }
   
-  dynamic_cast<IVectorBase*>(pCaller)->SetSplashRadius((float) progress);
-  
+  pCaller->As<IVectorBase>()->SetSplashRadius((float) progress);
   pCaller->SetDirty(false);
 };
 
@@ -49,7 +48,7 @@ void SplashClickActionFunc(IControl* pCaller)
 {
   float x, y;
   pCaller->GetUI()->GetMouseDownPoint(x, y);
-  dynamic_cast<IVectorBase*>(pCaller)->SetSplashPoint(x, y);
+  pCaller->As<IVectorBase>()->SetSplashPoint(x, y);
   pCaller->SetAnimation(SplashAnimationFunc, DEFAULT_ANIMATION_DURATION);
 }
 
@@ -115,6 +114,7 @@ void IControl::SetParamIdx(int paramIdx, int valIdx)
 {
   assert(valIdx > kNoValIdx && valIdx < NVals());
   mVals.at(valIdx).idx = paramIdx;
+  SetDirty(false);
 }
 
 const IParam* IControl::GetParam(int valIdx) const
@@ -231,6 +231,15 @@ bool IControl::IsDirty()
   if (GetAnimationFunction())
     return true;
   
+  if (!mDirty && mAnimationEndActionFuncQueued)
+  {
+    // swapping into tmp var here allows IGraphics::PromptForFile() etc to be used in action func without causing a loop
+    // this was problematic on windows
+    auto func = mAnimationEndActionFuncQueued;
+    mAnimationEndActionFuncQueued = nullptr; 
+    func(this);
+  }
+  
   return mDirty;
 }
 
@@ -256,12 +265,22 @@ void IControl::SetInteractionDisabled(bool disable)
 
 void IControl::OnMouseDown(float x, float y, const IMouseMod& mod)
 {
-  #ifdef PROTOOLS
+  // #bluelab
+  //#ifdef PROTOOLS
+#ifndef __linux__
   if (mod.A)
   {
     SetValueToDefault(GetValIdxForPos(x, y));
   }
-  #endif
+#else
+  // On Linux, Alt+click does nothing (at least on my xubuntu)
+  // So use Ctrl-click instead to reset parameters
+  if (mod.C)
+  {
+    SetValueToDefault(GetValIdxForPos(x, y));
+  }
+#endif
+  //#endif
 
   if (mod.R)
     PromptUserInput(GetValIdxForPos(x, y));
@@ -269,11 +288,12 @@ void IControl::OnMouseDown(float x, float y, const IMouseMod& mod)
 
 void IControl::OnMouseDblClick(float x, float y, const IMouseMod& mod)
 {
-  #ifdef PROTOOLS
-  PromptUserInput(GetValIdxForPos(x, y));
-  #else
+    // #bluelab
+  //#ifdef PROTOOLS
+  //PromptUserInput(GetValIdxForPos(x, y));
+  //#else
   SetValueToDefault(GetValIdxForPos(x, y));
-  #endif
+  //#endif
 }
 
 void IControl::OnMouseOver(float x, float y, const IMouseMod& mod)
@@ -318,6 +338,13 @@ void IControl::SetSize(float w, float h)
   if (h < 0.f) h = 0.f;
 
   SetTargetAndDrawRECTs({mRECT.L, mRECT.T, mRECT.L + w, mRECT.T + h});
+}
+
+void
+IControl::GetSize(float *w, float *h)
+{
+    *w = mRECT.W();
+    *h = mRECT.H();
 }
 
 IControl* IControl::AttachGestureRecognizer(EGestureType type, IGestureFunc func)
@@ -430,8 +457,8 @@ void IControl::OnEndAnimation()
   mAnimationFunc = nullptr;
   SetDirty(false);
   
-  if(mAnimationEndActionFunc)
-    mAnimationEndActionFunc(this);
+  if(mAnimationEndActionFunc) // queue for next clean draw
+    mAnimationEndActionFuncQueued = mAnimationEndActionFunc;
 }
 
 void IControl::StartAnimation(int duration)
@@ -473,6 +500,8 @@ void ITextControl::SetStr(const char* str)
     
     if(mSetBoundsBasedOnStr)
       SetBoundsBasedOnStr();
+    
+    SetDirty(false);
   }
 }
 
@@ -482,6 +511,8 @@ void ITextControl::SetStrFmt(int maxlen, const char* fmt, ...)
   va_start(arglist, fmt);
   mStr.SetAppendFormattedArgs(false, maxlen, fmt, arglist);
   va_end(arglist);
+  
+  SetDirty(false);
 }
 
 void ITextControl::Draw(IGraphics& g)
@@ -726,7 +757,33 @@ ISwitchControlBase::ISwitchControlBase(const IRECT& bounds, int paramIdx, IActio
 , mNumStates(numStates)
 {
   assert(mNumStates > 1);
+  mDisabledState.Resize(numStates);
+  SetAllStatesDisabled(false);
   mDblAsSingleClick = true;
+}
+
+void ISwitchControlBase::SetAllStatesDisabled(bool disabled)
+{
+  for(int i=0; i<mNumStates; i++)
+  {
+    SetStateDisabled(i, disabled);
+  }
+  SetDirty(false);
+}
+
+void ISwitchControlBase::SetStateDisabled(int stateIdx, bool disabled)
+{
+  if(stateIdx >= 0 && stateIdx < mNumStates)
+    mDisabledState.Get()[stateIdx] = disabled;
+  
+  SetDirty(false);
+}
+
+bool ISwitchControlBase::GetStateDisabled(int stateIdx) const
+{
+  if(stateIdx >= 0 && stateIdx < mNumStates)
+    return mDisabledState.Get()[stateIdx];
+  return false;
 }
 
 void ISwitchControlBase::OnInit()
@@ -788,7 +845,7 @@ void IKnobControlBase::OnMouseDown(float x, float y, const IMouseMod& mod)
 void IKnobControlBase::OnMouseUp(float x, float y, const IMouseMod& mod)
 {
   if (mHideCursorOnDrag)
-    GetUI()->HideMouseCursor(false);
+    GetUI()->HideMouseCursor(false, false);
   
   mMouseDown = false;
   SetDirty(false);

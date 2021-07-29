@@ -45,7 +45,13 @@
       #error Define either IGRAPHICS_GL2 or IGRAPHICS_GL3 when using IGRAPHICS_GL and IGRAPHICS_NANOVG with OS_WIN
     #endif
   #elif defined OS_LINUX
-    #error NOT IMPLEMENTED
+    #if defined IGRAPHICS_GL2
+      #define NANOVG_GL2_IMPLEMENTATION
+    #elif defined IGRAPHICS_GL3
+      #define NANOVG_GL3_IMPLEMENTATION
+    #else
+      #error Define either IGRAPHICS_GL2 or IGRAPHICS_GL3 for IGRAPHICS_NANOVG with OS_LINUX
+    #endif
   #elif defined OS_WEB
     #if defined IGRAPHICS_GLES2
       #define NANOVG_GLES2_IMPLEMENTATION
@@ -230,7 +236,7 @@ END_IPLUG_NAMESPACE
 #pragma mark -
 
 IGraphicsNanoVG::IGraphicsNanoVG(IGEditorDelegate& dlg, int w, int h, int fps, float scale)
-: IGraphicsPathBase(dlg, w, h, fps, scale)
+: IGraphics(dlg, w, h, fps, scale)
 {
   DBGMSG("IGraphics NanoVG @ %i FPS\n", fps);
   StaticStorage<IFontData>::Accessor storage(sFontCache);
@@ -405,6 +411,46 @@ void IGraphicsNanoVG::GetLayerBitmapData(const ILayerPtr& layer, RawBitmapData& 
   }
 }
 
+IBitmap
+IGraphicsNanoVG::CreateBitmap(int w, int h, int bpp, unsigned char *data)
+{
+    int idx = 0;
+    int imageFlags = 0;
+ 
+    char *name = "";
+    int scale = 1;
+    
+    int nStates = 1;
+    int framesAreHorizontal = 0;
+    
+    ActivateGLContext();
+    idx = nvgCreateImageRGBA(mVG, w, h, imageFlags, data);
+    DeactivateGLContext();
+
+    
+    Bitmap *bmp0 = new Bitmap(mVG, name, scale, idx, false);
+    
+    IBitmap bmp(bmp0, nStates, framesAreHorizontal, name);
+    
+    return bmp;
+}
+
+void
+IGraphicsNanoVG::ReleaseBitmap(const IBitmap &bmp)
+{
+    ActivateGLContext();
+
+    Bitmap *bmp0 = (Bitmap *)bmp.GetAPIBitmap();
+    if (bmp0 != NULL)
+    {
+        ((IBitmap *)&bmp)->ResetAPIBitmap();
+        
+        delete bmp0;
+    }
+    
+    DeactivateGLContext();
+}
+
 void IGraphicsNanoVG::ApplyShadowMask(ILayerPtr& layer, RawBitmapData& mask, const IShadow& shadow)
 {
   const APIBitmap* pBitmap = layer->GetAPIBitmap();
@@ -459,7 +505,18 @@ void IGraphicsNanoVG::OnViewInitialized(void* pContext)
     mVG = nvgCreateContext(pContext, NVG_ANTIALIAS | NVG_TRIPLE_BUFFER/*| NVG_DEBUG*/);
 #endif
 #else
-  mVG = nvgCreateContext(NVG_ANTIALIAS /*| NVG_STENCIL_STROKES*/);
+  // ORIGIN: before nanovg AWTK optimizations
+  //mVG = nvgCreateContext(NVG_ANTIALIAS
+  //                       | NVG_STENCIL_STROKES
+  //                       // | NVG_DEBUG
+  //                       );
+    
+  // NEW: do not use anti-liasing (seems to slow up)
+  // NOTE: but on UST for example, no antialiasing is very visible
+  //mVG = nvgCreateContext(0);
+    
+    mVG = nvgCreateContext(NVG_ANTIALIAS); // | NVG_DEBUG);
+    //mVG = nvgCreateContext(NVG_ANTIALIAS | NVG_DEBUG);
 #endif
 
   if (mVG == nullptr)
@@ -489,7 +546,7 @@ void IGraphicsNanoVG::DrawResize()
 {
   if (mMainFrameBuffer != nullptr)
     nvgDeleteFramebuffer(mMainFrameBuffer);
-  
+    
   if (mVG)
   {
     mMainFrameBuffer = nvgCreateFramebuffer(mVG, WindowWidth() * GetScreenScale(), WindowHeight() * GetScreenScale(), 0);
@@ -685,6 +742,11 @@ void IGraphicsNanoVG::DoDrawText(const IText& text, const char* str, const IRECT
 
   nvgFillColor(mVG, NanoVGColor(text.mFGColor, pBlend));
   NanoVGSetBlendMode(mVG, pBlend);
+  // #bluelab Clip text according to provided bounds
+  // => good for tabs,
+  // => bad for drop down menus and fat text labels
+  if (text.mClipToBounds)
+      SetClipRegion(bounds); 
   nvgText(mVG, x, y, str, NULL);
   nvgGlobalCompositeOperation(mVG, NVG_SOURCE_OVER);
   PathTransformRestore();
@@ -764,13 +826,18 @@ bool IGraphicsNanoVG::LoadAPIFont(const char* fontID, const PlatformFontPtr& fon
     
   if (cached)
   {
-    nvgCreateFontFaceMem(mVG, fontID, cached->Get(), cached->GetSize(), cached->GetFaceIdx(), 0);
+      // awtk
+      //nvgCreateFontMem(mVG, fontID, cached->Get(), cached->GetSize(), 0);
+      nvgCreateFontFaceMem(mVG, fontID, cached->Get(), cached->GetSize(), cached->GetFaceIdx(), 0);
+      
     return true;
   }
     
   IFontDataPtr data = font->GetFontData();
 
-  if (data->IsValid() && nvgCreateFontFaceMem(mVG, fontID, data->Get(), data->GetSize(), data->GetFaceIdx(), 0) != -1)
+    // awtk
+  //if (data->IsValid() && nvgCreateFontMem(mVG, fontID, data->Get(), data->GetSize(), 0) != -1)
+    if (data->IsValid() && nvgCreateFontFaceMem(mVG, fontID, data->Get(), data->GetSize(), data->GetFaceIdx(), 0) != -1)
   {
     storage.Add(data.release(), fontID);
     return true;

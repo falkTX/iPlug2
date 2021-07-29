@@ -30,7 +30,7 @@ AAX_CEffectParameters *AAX_CALLBACK IPlugAAX::Create()
 void AAX_CEffectGUI_IPLUG::CreateViewContents() 
 {
   TRACE
-  mPlug = dynamic_cast<IPlugAAX*>(GetEffectParameters());  
+  mPlug = dynamic_cast<IPlugAAX*>(GetEffectParameters());
 }
 
 void AAX_CEffectGUI_IPLUG::CreateViewContainer()

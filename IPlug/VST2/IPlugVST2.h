@@ -21,6 +21,11 @@
 #include "IPlugAPIBase.h"
 #include "IPlugProcessor.h"
 
+#if defined OS_LINUX
+#include "xcbt.h"
+#define BL_FIX_CRASH_REOPEN 1
+#endif
+
 BEGIN_IPLUG_NAMESPACE
 
 /** Used to pass various instance info to the API class */
@@ -37,6 +42,10 @@ class IPlugVST2 : public IPlugAPIBase
 public:
   IPlugVST2(const InstanceInfo& info, const Config& config);
 
+#if BL_FIX_CRASH_REOPEN
+    virtual ~IPlugVST2();
+#endif
+    
   //IPlugAPIBase
   void BeginInformHostOfParamChange(int idx) override;
   void InformHostOfParamChange(int idx, double normalizedValue) override;
@@ -59,13 +68,10 @@ private:
   virtual VstIntPtr VSTVendorSpecific(VstInt32 idx, VstIntPtr value, void* ptr, float opt) { return 0; }
   virtual VstIntPtr VSTCanDo(const char* hostString) { return 0; }
     
-  /**
-   Called prior to every ProcessBlock call in order to update certain properties and connect buffers if necessary
-
-   @param inputs Pointer to a 2D array of SAMPLETYPE precision audio input data for each channel
-   @param outputs Pointer to a 2D array of SAMPLETYPE precision audio input data for each channel
-   @param nFrames the number of samples to be processed this block
-   */
+  /** Called prior to every ProcessBlock call in order to update certain properties and connect buffers if necessary
+   * @param inputs Pointer to a 2D array of SAMPLETYPE precision audio input data for each channel
+   * @param outputs Pointer to a 2D array of SAMPLETYPE precision audio input data for each channel
+   * @param nFrames the number of samples to be processed this block */
   template <class SAMPLETYPE>
   void VSTPreProcess(SAMPLETYPE** inputs, SAMPLETYPE** outputs, VstInt32 nFrames);
   
@@ -79,6 +85,8 @@ private:
   bool SendVSTEvent(VstEvent& event);
   bool SendVSTEvents(WDL_TypedBuf<VstEvent>* pEvents);
   
+  void UpdateEditRect();
+    
   ERect mEditRect;
   VstSpeakerArrangement mInputSpkrArr, mOutputSpkrArr;
 
@@ -87,6 +95,10 @@ private:
 
   IByteChunk mState;     // Persistent storage if the host asks for plugin state.
   IByteChunk mBankState; // Persistent storage if the host asks for bank state.
+  
+#ifdef OS_LINUX
+  xcbt_embed* mEmbed;
+#endif
 protected:
   AEffect mAEffect;
   audioMasterCallback mHostCallback;

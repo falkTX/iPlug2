@@ -55,10 +55,22 @@ public:
   //IPlugAPP
   void AppProcess(double** inputs, double** outputs, int nFrames);
 
+  // #bluelab
+  // NOTE sure at all it is good to be set here ... :(
+  void SetWindowTitle(const char *title);
+  void ShowMessageBox(const char *message);
+    
+  // #bluelab
+  void GetStartupArgs(int *argc, char ***argv);
+        
 private:
   IPlugAPPHost* mAppHost = nullptr;
   IPlugQueue<IMidiMsg> mMidiMsgsFromCallback {MIDI_TRANSFER_SIZE};
   IPlugQueue<SysExData> mSysExMsgsFromCallback {SYSEX_TRANSFER_SIZE};
+#ifdef OS_LINUX
+  std::unique_ptr<Timer> mResizeTimer;
+  bool mNeedResize = false;
+#endif
 
   friend class IPlugAPPHost;
 };
