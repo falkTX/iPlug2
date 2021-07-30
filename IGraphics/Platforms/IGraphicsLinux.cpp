@@ -661,7 +661,7 @@ void IGraphicsLinux::CloseWindow()
   mClosing = true;
 
   // Ensure the timer processing is finished
-  // (this should nop happen, this is just in case)
+  // (this should not happen, this is just in case)
   while(mTimerProcessing)
     usleep(1000);
 
@@ -1242,7 +1242,7 @@ IGraphicsLinux::IGraphicsLinux(IGEditorDelegate& dlg, int w, int h, int fps, flo
   : IGRAPHICS_DRAW_CLASS(dlg, w, h, fps, scale)
 {
   // #bluelab
-  mClosing = false;;
+  mClosing = false;
   mTimerProcessing = false;
   mPrevTimeStampPaint = 0.0;
   mTimerDelay = (int)(1000.0/fps);

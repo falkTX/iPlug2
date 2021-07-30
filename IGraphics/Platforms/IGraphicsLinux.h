@@ -113,7 +113,7 @@ private:
   uint32_t ConvertSimpleKeyToVK(uint32_t keycode, uint16_t modifier, char utf8[7]);
 
   // #bluelab
-  // Avoid conflicts between timer and window close ath the same time
+  // Avoid conflicts between timer and window close at the same time
   bool mClosing;
   bool mTimerProcessing;
 
