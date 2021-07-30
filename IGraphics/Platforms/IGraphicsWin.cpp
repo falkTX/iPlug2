@@ -278,14 +278,14 @@ void IGraphicsWin::OnDisplayTimer(int vBlankCount)
       // Force a redraw right now
       UpdateWindow(mPlugWnd);
 
-      if(mVSYNCEnabled)
+      if (mVSYNCEnabled)
       {
         // Check and see if we are still in this frame.
         curCount = mVBlankCount;
         if (msgCount != curCount)
         {
           // we are late, skip the next vblank to give us a breather.
-          mVBlankSkipUntil = curCount+1;
+          mVBlankSkipUntil = curCount + 1;
           DBGMSG("vblank painting was late by %i frames.", (mVBlankSkipUntil - msgCount));
         }
       }
