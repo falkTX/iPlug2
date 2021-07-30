@@ -37,6 +37,10 @@ using PLUG_SAMPLE_SRC = double;
 
 using sample = PLUG_SAMPLE_DST;
 
+#if WIN32
+#define sample PLUG_SAMPLE_DST
+#endif
+
 #define LOGFILE "IPlugLog.txt"
 #define MAX_PROCESS_TRACE_COUNT 100
 #define MAX_IDLE_TRACE_COUNT 15
