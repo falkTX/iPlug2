@@ -608,7 +608,6 @@ IPlugAPPHost::ShowMessageBox(const char *message)
         MessageBox(gHWND, info.Get(), PLUG_NAME, MB_OK);
 }
 
-
 //static
 WDL_DLGRET IPlugAPPHost::MainDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
@@ -679,11 +678,17 @@ WDL_DLGRET IPlugAPPHost::MainDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPA
           IPlugAPP* pPlug = pAppHost->GetPlug();
           
           bool pluginOpensAboutBox = pPlug->OnHostRequestingAboutBox();
-          
+
           if (pluginOpensAboutBox == false)
           {
             WDL_String info;
-            info.Append(PLUG_COPYRIGHT_STR"\nVersion: "PLUG_VERSION_STR"\nBuilt on " __DATE__);
+            // For WIN32 compilation
+            // Poor VC2019 that bugs because it even doesn't understand what's happening here...
+            
+            //info.Append(PLUG_COPYRIGHT_STR"\nVersion: "PLUG_VERSION_STR"\nBuilt on " __DATE__);
+            info.Append(PLUG_COPYRIGHT_STR"\nVersion: ");
+            info.Append(PLUG_VERSION_STR"\nBuilt on " __DATE__);
+
             MessageBox(hwndDlg, info.Get(), PLUG_NAME, MB_OK);
           }
 
