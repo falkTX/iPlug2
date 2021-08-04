@@ -244,6 +244,11 @@ void IPlugVST3::SetLatency(int latency)
 {
   IPlugProcessor::SetLatency(latency);
 
+  // #bluelab
+  // Avoid crash during VST3 scan
+  if (componentHandler == NULL)
+    return;
+
   FUnknownPtr<IComponentHandler>handler(componentHandler);
   handler->restartComponent(kLatencyChanged);
 }
