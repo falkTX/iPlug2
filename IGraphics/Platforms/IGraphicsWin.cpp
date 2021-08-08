@@ -22,6 +22,12 @@
 #include <wininet.h>
 #include <VersionHelpers.h>
 
+// Disable native windows tooltips
+// We will use custom iPlug2 tooltips, with good style
+// (must disable windows tootips here, otherwise we would have
+// both tooltips displayed at the same time)
+#define BL_DISABLE_WIN_TOOLTIPS 1
+
 using namespace iplug;
 using namespace igraphics;
 
@@ -1809,6 +1815,7 @@ void IGraphicsWin::SetTooltip(const char* tooltip)
 
 void IGraphicsWin::ShowTooltip()
 {
+#if !BL_DISABLE_WIN_TOOLTIPS
   if (mTooltipIdx > -1)
   {
     const char* tooltip = GetControl(mTooltipIdx)->GetTooltip();
@@ -1818,6 +1825,7 @@ void IGraphicsWin::ShowTooltip()
       mShowingTooltip = true;
     }
   }
+#endif
 }
 
 void IGraphicsWin::HideTooltip()
