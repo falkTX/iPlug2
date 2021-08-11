@@ -21,6 +21,15 @@
 
 using namespace iplug;
 
+// #bluelab
+void
+SetStartupArgs(int argc, const char** argv)
+{
+  IPlugAPPHost* pAppHost = IPlugAPPHost::sInstance.get();
+  if (pAppHost != NULL)
+    pAppHost->SetStartupArgs(argc, argv);
+}
+
 #pragma mark - WINDOWS
 #if defined OS_WIN
 #include <windows.h>
@@ -56,6 +65,30 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdPa
     IPlugAPPHost* pAppHost = IPlugAPPHost::Create();
     pAppHost->Init();
     pAppHost->TryToChangeAudio();
+
+    // #bluelab
+    // Get startup args
+    int argc;
+    LPWSTR *argvW = CommandLineToArgvW(GetCommandLineW(), &argc);
+    if (argvW != NULL)
+    {
+      char **argv = (char**)malloc(argc * sizeof(char*));
+
+      for (int i = 0; i < argc; i++)
+      {
+        argv[i] = (char*)malloc(MAX_PATH * sizeof(char));
+        int ret = wcstombs(argv[i], argvW[i], MAX_PATH);
+        if (ret == MAX_PATH)
+          argv[MAX_PATH - 1] = '\0';
+      }
+
+      SetStartupArgs(argc, (const char**)argv);
+      LocalFree(argvW);
+
+      for (int i = 0; i < argc; i++)
+        free(argv[i]);
+      free(argv);
+    }
 
     HACCEL hAccel = LoadAccelerators(gHINSTANCE, MAKEINTRESOURCE(IDR_ACCELERATOR1));
 
@@ -310,9 +343,6 @@ INT_PTR SWELLAppMain(int msg, INT_PTR parm1, INT_PTR parm2)
 #include "swell-internal.h" // for HWND structure
 
 HWND gHWND = NULL;
-
-// #bluelab
-void SetStartupArgs(int argc, const char **argv);
     
 int main(int argc, char **argv)
 {
@@ -362,15 +392,6 @@ INT_PTR SWELLAppMain(int msg, INT_PTR parm1, INT_PTR parm2)
   }
 
   return 0;
-}
-
-// #bluelab
-void
-SetStartupArgs(int argc, const char **argv)
-{
-  IPlugAPPHost* pAppHost = IPlugAPPHost::sInstance.get();
-  if (pAppHost != NULL)
-    pAppHost->SetStartupArgs(argc, argv);
 }
 
 #define CBS_HASSTRINGS 0
