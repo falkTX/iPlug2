@@ -18,11 +18,6 @@
 #include "IPlugVST3_RunLoop.h"
 #endif
 
-// - FIX: with VST3, close the plug ui, re-open it => crash
-// And also when launching under gdb, it detecs an error when setting the timer
-// - NOTE: tested with Gain12, OnIdle() is not called if we define it
-#define BL_FIX_CRASH_REOPEN_VST3 1
-
 /** IPlug VST3 View  */
 template <class T>
 class IPlugVST3View : public Steinberg::CPluginView
@@ -33,10 +28,25 @@ public:
   : mOwner(owner)
   {
     mOwner.addRef();
+
+    // #bluelab
+#ifdef OS_LINUX
+    mRunLoop = NULL;
+    mTimer = NULL;
+#endif
   }
   
   ~IPlugVST3View()
   {
+      // #bluelab
+#ifdef OS_LINUX
+      if ((mRunLoop != NULL) && (mTimer != NULL))
+      {
+          mRunLoop->DestroyTimer(mTimer);
+          mTimer = NULL;
+      }
+#endif
+          
       mOwner.release();
   }
   
@@ -161,11 +171,10 @@ public:
   Steinberg::tresult PLUGIN_API setFrame (Steinberg::IPlugFrame* frame) override 
   { 
   #ifdef OS_LINUX
-    auto rloop = iplug::IPlugVST3_RunLoop::Create(frame);
-#if !BL_FIX_CRASH_REOPEN_VST3
-    rloop->CreateTimer([&]() { mOwner.OnIdle(); }, 20);
-#endif
-    mOwner.SetIntegration(rloop);
+    // #bluelab
+    /*auto rloop*/ mRunLoop = iplug::IPlugVST3_RunLoop::Create(frame);
+    mTimer = mRunLoop/*rloop*/->CreateTimer([&]() { mOwner.OnIdle(); }, 20);
+    mOwner.SetIntegration(mRunLoop/*rloop*/);
   #endif
   
     return CPluginView::setFrame(frame);
@@ -328,4 +337,10 @@ public:
   }
 
   T& mOwner;
+
+  // #bluelab
+#ifdef OS_LINUX
+  struct iplug::IPlugVST3_RunLoop *mRunLoop;
+  struct iplug::VST3Timer *mTimer;
+#endif
 };
