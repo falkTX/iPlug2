@@ -936,7 +936,7 @@ void IGraphicsLinux::PromptForFile(WDL_String& fileName, WDL_String& path, EFile
     args.AppendFormatted(fileName.GetLength() + 20, "\"--filename=%s\" ", fileName.Get());
   }
 
-  // NOTE: maybe ther is a bug here, infinite loop due to "," note removed
+  // NOTE: maybe there is a bug here, infinite loop due to "," note removed
   // after processing
 #if !BL_FILE_FILTER_PATCH
   if (extensions)
@@ -956,7 +956,10 @@ void IGraphicsLinux::PromptForFile(WDL_String& fileName, WDL_String& path, EFile
   }
 #else
   if (extensions)
-      args.AppendFormatted(256, "--file-filter=\"%s\" ",  extensions);
+  {
+      // Warning: Zenity seems to not manage case for extensions
+      args.AppendFormatted(256, "--file-filter=\"%s\" ", extensions);
+  }
 #endif
   
   WDL_String sStdout;
