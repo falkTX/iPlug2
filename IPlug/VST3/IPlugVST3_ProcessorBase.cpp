@@ -14,6 +14,10 @@
 #include "public.sdk/source/vst/vsteventshelper.h"
 #include "IPlugVST3_ProcessorBase.h"
 
+// #bluelab
+// Ensure OnParamChange() won't be called twice each time
+#define BL_FIX_VST3_PARAM_CHANGE 1
+
 using namespace iplug;
 using namespace Steinberg;
 using namespace Vst;
@@ -313,9 +317,20 @@ void IPlugVST3ProcessorBase::ProcessParameterChanges(ProcessData& data, IPlugQue
                 mPlug.mParams_mutex.Enter();
 #endif
                 mPlug.GetParam(idx)->SetNormalized(value);
-              
+
+                // #bluelab
+#if !BL_FIX_VST3_PARAM_CHANGE
                 // In VST3 non distributed the same parameter value is also set via IPlugVST3Controller::setParamNormalized(ParamID tag, ParamValue value)
                 mPlug.OnParamChange(idx, kHost, offsetSamples);
+#else
+                // Check that the parameter really changed
+                if (fabs(mPlug.GetParam(idx)->GetNormalized() - value) > 1e-30)
+                {
+                    // In VST3 non distributed the same parameter value is also set via IPlugVST3Controller::setParamNormalized(ParamID tag, ParamValue value)
+                    mPlug.OnParamChange(idx, kHost, offsetSamples);
+                }
+#endif
+
 #ifdef PARAMS_MUTEX
                 mPlug.mParams_mutex.Leave();
 #endif
