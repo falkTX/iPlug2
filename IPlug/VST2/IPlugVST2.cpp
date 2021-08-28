@@ -12,6 +12,9 @@
 #include "IPlugVST2.h"
 #include "IPlugPluginBase.h"
 
+// On Bitwig studio (linux), the parameter nams were e.g "dB" or "%"
+#define BL_FIX_BITWIG_LINUX_PARAM_NAMES 1
+
 using namespace iplug;
 
 static const int VST_VERSION = 2400;
@@ -415,7 +418,12 @@ VstIntPtr VSTCALLBACK IPlugVST2::VSTDispatcher(AEffect *pEffect, VstInt32 opCode
             break;
         }
 
+#if !BL_FIX_BITWIG_LINUX_PARAM_NAMES
         strcpy(props->label, pParam->GetLabel());
+#else
+        strcpy(props->label, pParam->GetName());
+#endif
+        
         LEAVE_PARAMS_MUTEX_STATIC
 
         return 1;
