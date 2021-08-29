@@ -58,7 +58,7 @@ public:
    * @param frame an object with IRunLoop interface
    * @return allocated embed structure in case the initialization could be done on nullptr*/
   static IPlugVST3_RunLoop* Create(Steinberg::FUnknown *frame);
-  static void Destory(IPlugVST3_RunLoop* self);
+  static void Destroy(IPlugVST3_RunLoop* self);
 
   VST3Timer* CreateTimer(std::function<void()> callback, int msec);
   void DestroyTimer(VST3Timer* timer);

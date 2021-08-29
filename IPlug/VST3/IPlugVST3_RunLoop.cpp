@@ -85,7 +85,7 @@ IPlugVST3_RunLoop* IPlugVST3_RunLoop::Create(Steinberg::FUnknown *frame)
   return ev;
 }
 
-void IPlugVST3_RunLoop::Destory(IPlugVST3_RunLoop* self)
+void IPlugVST3_RunLoop::Destroy(IPlugVST3_RunLoop* self)
 {
   Self::xt_dtor((xcbt_embed*) self);
 }
@@ -172,7 +172,7 @@ int IPlugVST3_RunLoop::xt_set_timer(xcbt_embed* pe, int msec)
   {
     return 1;
   }
-
+  
   return ev->tHandlerSet == true;
 }
 
