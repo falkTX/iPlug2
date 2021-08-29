@@ -172,6 +172,14 @@ public:
   { 
   #ifdef OS_LINUX
     // #bluelab
+    if (mRunLoop != NULL)
+    {
+      if (mTimer != NULL)
+        mRunLoop->DestroyTimer(mTimer);
+      //mOwner.SetIntegration(NULL); // ??
+      iplug::IPlugVST3_RunLoop::Destroy(mRunLoop);
+    }
+    
     /*auto rloop*/ mRunLoop = iplug::IPlugVST3_RunLoop::Create(frame);
     mTimer = mRunLoop/*rloop*/->CreateTimer([&]() { mOwner.OnIdle(); }, 20);
     mOwner.SetIntegration(mRunLoop/*rloop*/);
