@@ -35,6 +35,9 @@ IPlugVST3::IPlugVST3(const InstanceInfo& info, const Config& config)
 // #ifndef OS_LINUX
   CreateTimer();
 // #endif
+
+  // #bluelab
+  mIsSettingLatency = false;
 }
 
 IPlugVST3::~IPlugVST3() {}
@@ -242,14 +245,26 @@ void IPlugVST3::SendParameterValueFromUI(int paramIdx, double normalisedValue)
 
 void IPlugVST3::SetLatency(int latency)
 {
+  // #bluelab
+  // Avoid possible infinite loop, (e.g with linux/Renoise-V3.3.2)
+  if (mIsSettingLatency)
+    return;
+  mIsSettingLatency = true;
+    
   IPlugProcessor::SetLatency(latency);
 
   // #bluelab
   // Avoid crash during VST3 scan
   if (componentHandler == NULL)
+  {
+    mIsSettingLatency = false;
+    
     return;
-
+  }
+  
   FUnknownPtr<IComponentHandler>handler(componentHandler);
   handler->restartComponent(kLatencyChanged);
+
+  mIsSettingLatency = false;
 }
 

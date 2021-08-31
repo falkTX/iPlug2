@@ -152,6 +152,9 @@ public:
   
 private:
   ViewType* mView;
+
+  // #bluelab
+  bool mIsSettingLatency;
 };
 
 IPlugVST3* MakePlug(const InstanceInfo& info);
