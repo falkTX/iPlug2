@@ -176,8 +176,7 @@ public:
     {
       if (mTimer != NULL)
         mRunLoop->DestroyTimer(mTimer);
-      //mOwner.SetIntegration(NULL); // ??
-      iplug::IPlugVST3_RunLoop::Destroy(mRunLoop);
+      mOwner.SetIntegration(NULL); // This will destroy mRunLoop
     }
     
     /*auto rloop*/ mRunLoop = iplug::IPlugVST3_RunLoop::Create(frame);
