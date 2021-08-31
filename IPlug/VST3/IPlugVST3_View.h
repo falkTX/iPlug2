@@ -181,7 +181,9 @@ public:
     }
     
     /*auto rloop*/ mRunLoop = iplug::IPlugVST3_RunLoop::Create(frame);
-    mTimer = mRunLoop/*rloop*/->CreateTimer([&]() { mOwner.OnIdle(); }, 20);
+    mTimer = NULL;
+    if (mRunLoop != NULL) // mRunLoop can be null if frame is null
+        mTimer = mRunLoop/*rloop*/->CreateTimer([&]() { mOwner.OnIdle(); }, 20);
     mOwner.SetIntegration(mRunLoop/*rloop*/);
   #endif
   
