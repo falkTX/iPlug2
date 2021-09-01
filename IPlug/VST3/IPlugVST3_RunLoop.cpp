@@ -10,6 +10,10 @@
 
 #include "IPlugVST3_RunLoop.h"
 
+// Fixes vst3 GUI not animated (until we move the mouse over the plug window)
+// (Waveform11/linux/vst3)
+#define BL_FIX_GUI_FREEZE 1
+
 BEGIN_IPLUG_NAMESPACE
 
 struct VST3Timer : Steinberg::Linux::ITimerHandler, public Steinberg::FObject
@@ -48,8 +52,24 @@ struct TimerHandler : Steinberg::Linux::ITimerHandler, public Steinberg::FObject
 
   void PLUGIN_API onTimer () override
   {
+    // #bluelab
+    // If we unregister the timer here:
+    // - display won't be refreshed anymore (Waveform11/linux/vst3)
+    // - display will stop refreshing after a while (Bitwig3.3.1/vst3/linux)
+    // To refresh, would need to move the mouse pointer over the plug window.
+    //
+    // This seems because we have the risk that xcbt_process() fails to set
+    // the new timer. In this case, we would have no timer anymore,
+    // until we move the mouse over thr plug GUI, to force call to xcbt_process()
+    // and try to set a new timer.
+    //
+    // The current timer will be unregistered later if necessary, in xt_set_timer()
+    // (called from xcbt)
+#if !BL_FIX_GUI_FREEZE
     ev->runLoop->unregisterTimer(this);
     ev->tHandlerSet = false;
+#endif
+    
     xcbt_process(ev->x);
   }
 
