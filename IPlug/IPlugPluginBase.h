@@ -96,7 +96,11 @@ public:
   
   /** @return \c true if the plug-in allows reszing via the host's window chrome, as defined in config.h */
   bool GetHostResizeEnabled() const { return mHostResize; }
-  
+
+  // #bluelab
+  // Need to set it or not, depending on system/format/host
+  void SetHostResizeEnabled(bool flag) { mHostResize = flag; }
+    
   /*** @return a CString with the bundle identifier (macOS/IOS only) */
   const char* GetBundleID() const { return mBundleID.Get(); }
     
