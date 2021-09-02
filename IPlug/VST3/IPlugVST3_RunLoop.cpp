@@ -36,8 +36,8 @@ struct EventHandler : Steinberg::Linux::IEventHandler, public Steinberg::FObject
   IPlugVST3_RunLoop* ev;
 
   void PLUGIN_API onFDIsSet (Steinberg::Linux::FileDescriptor) override 
-  { 
-    xcbt_process(ev->x); 
+  {
+    xcbt_process(ev->x);
   }
 
   DELEGATE_REFCOUNT (Steinberg::FObject)
@@ -69,7 +69,7 @@ struct TimerHandler : Steinberg::Linux::ITimerHandler, public Steinberg::FObject
     ev->runLoop->unregisterTimer(this);
     ev->tHandlerSet = false;
 #endif
-    
+
     xcbt_process(ev->x);
   }
 
