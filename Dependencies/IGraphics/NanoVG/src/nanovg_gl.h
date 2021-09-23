@@ -544,6 +544,32 @@ static int glnvg__renderCreate(void* uptr)
 	GLNVGcontext* gl = (GLNVGcontext*)uptr;
 	int align = 4;
 
+    // #bluelab
+    // Check OpenGL version before anything else
+    // because on Windows, if we have the wrong version, glCreateShader() will crash
+    const char *glVersion = (const char *)glGetString(GL_VERSION);
+    if (glVersion != NULL)
+    {
+        int vMajor = -1;
+        int vMinor = -1;
+        int numScanned = sscanf(glVersion, "%d.%d", &vMajor, &vMinor);
+    
+        if (numScanned == 2)
+        {
+#if defined NANOVG_GL2
+            if (vMajor < 2)
+                return 0;
+#elif defined NANOVG_GL3
+            if (vMajor < 3)
+                return 0;
+#elif defined NANOVG_GLES2
+            // TODO
+#elif defined NANOVG_GLES3
+            // TODO
+#endif
+        }
+    }
+    
 	// TODO: mediump float may not be enough for GLES2 in iOS.
 	// see the following discussion: https://github.com/memononen/nanovg/issues/46
 	static const char* shaderHeader =
