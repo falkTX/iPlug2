@@ -22,7 +22,9 @@
 #include <locale>
 
 // FIX: white background , black text!
-#define BL_FIX_HILIGHT_TEXT_ENTRY 1
+// NOTE: no need this anymore, since we are no using iPlug2 text entry
+// instead of the native ones
+#define BL_FIX_HILIGHT_TEXT_ENTRY 0 //1
 
 #ifdef _MSC_VER
 #if (_MSC_VER >= 1900 /* VS 2015*/) && (_MSC_VER < 1920 /* pre VS 2019 */)
