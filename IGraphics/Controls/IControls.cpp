@@ -1337,6 +1337,13 @@ void ISVGKnobControl::SetSVG(ISVG& svg)
   SetDirty(false);
 }
 
+void
+ISVGKnobControl::SetAngles(float startAngle, float endAngle)
+{
+    mStartAngle = startAngle;
+    mEndAngle = endAngle;
+}
+
 ISVGSwitchControl::ISVGSwitchControl(const IRECT& bounds, const std::initializer_list<ISVG>& svgs, int paramIdx, IActionFunction aF)
 : ISwitchControlBase(bounds, paramIdx, aF, static_cast<int>(svgs.size()))
 , mSVGs(svgs)

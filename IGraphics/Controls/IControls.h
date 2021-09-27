@@ -483,7 +483,10 @@ public:
   
   void Draw(IGraphics& g) override;
   void SetSVG(ISVG& svg);
-  
+
+  // #bluelab
+  void SetAngles(float startAngle, float endAngle);
+    
 private:
   ISVG mSVG;
   float mStartAngle = -135.f;
