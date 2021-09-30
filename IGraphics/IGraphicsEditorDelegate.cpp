@@ -268,3 +268,9 @@ void IGEditorDelegate::OnParamChangeUI(int paramIdx, EParamSource source)
   }
 }
     
+void
+IGEditorDelegate::ResetLastEditorSize()
+{
+    mLastWidth = 0;
+    mLastHeight = 0;
+}

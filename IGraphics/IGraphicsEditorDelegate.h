@@ -91,6 +91,9 @@ public:
 
   // #bluelab
   virtual void OnParamChangeUI(int paramIdx, EParamSource source = kUnknown) override;
+
+  // #bluelab
+  void ResetLastEditorSize();
     
 protected:  
   std::function<IGraphics*()> mMakeGraphicsFunc = nullptr;
