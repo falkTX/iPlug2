@@ -228,7 +228,8 @@ INT_PTR SWELLAppMain(int msg, INT_PTR parm1, INT_PTR parm2)
         menu = SWELL_DuplicateMenu(menu);
         HMENU src = LoadMenu(NULL, MAKEINTRESOURCE(IDR_MENU1));
 
-        for (int x = 0; x < GetMenuItemCount(src)-1; x++)
+        // #bluelab Do not skip the last entry "Help"
+        for (int x = 0; x < GetMenuItemCount(src)/*-1*/; x++)
         {
           HMENU sm = GetSubMenu(src,x);
           
@@ -241,7 +242,10 @@ INT_PTR SWELLAppMain(int msg, INT_PTR parm1, INT_PTR parm2)
             str[0] = 0;
             GetMenuItemInfo(src, x, TRUE, &mii);
             MENUITEMINFO mi= {sizeof(mi), MIIM_STATE|MIIM_SUBMENU|MIIM_TYPE,MFT_STRING, 0, 0, SWELL_DuplicateMenu(sm), NULL, NULL, 0, str};
-            InsertMenuItem(menu, x+1, TRUE, &mi);
+            if (x < GetMenuItemCount(src) - 1) // #bluelab: insert "Help" at the end
+              InsertMenuItem(menu, x+1, TRUE, &mi);
+            else
+              InsertMenuItem(menu, x+2, TRUE, &mi); // Insert "Help" after builtin "Window"
           }
         }
       }
@@ -250,7 +254,7 @@ INT_PTR SWELLAppMain(int msg, INT_PTR parm1, INT_PTR parm2)
       {
         HMENU sm = GetSubMenu(menu, 1);
         DeleteMenu(sm, ID_QUIT, MF_BYCOMMAND); // remove QUIT from our file menu, since it is in the system menu on OSX
-        DeleteMenu(sm, ID_PREFERENCES, MF_BYCOMMAND); // remove PREFERENCES from the file menu, since it is in the system menu on OSX
+        //DeleteMenu(sm, ID_PREFERENCES, MF_BYCOMMAND); // remove PREFERENCES from the file menu, since it is in the system menu on OSX
 
         // remove any trailing separators
         int a = GetMenuItemCount(sm);
@@ -258,13 +262,22 @@ INT_PTR SWELLAppMain(int msg, INT_PTR parm1, INT_PTR parm2)
         while (a > 0 && GetMenuItemID(sm, a-1) == 0)
           DeleteMenu(sm, --a, MF_BYPOSITION);
 
+#if 0 // #bluelab: don't remove the file menu, we need it!
         DeleteMenu(menu, 1, MF_BYPOSITION); // delete file menu
+#endif
+       
+        // #bluelab
+        //HMENU sm2 = GetSubMenu(menu, 3);
+        //DeleteMenu(sm2, ID_PREFERENCES, MF_BYCOMMAND); // remove PREFERENCES from the file menu
       }
 #ifndef _DEBUG
       if (menu)
       {
-        HMENU sm = GetSubMenu(menu, 1);
+// #bluelab: debug menu is at the 2nd position
+        //HMENU sm = GetSubMenu(menu, 1);
+        HMENU sm = GetSubMenu(menu, 2);
         DeleteMenu(sm, ID_LIVE_EDIT, MF_BYCOMMAND);
+        DeleteMenu(sm, ID_SHOW_BOUNDS, MF_BYCOMMAND); // #bluelab
         DeleteMenu(sm, ID_SHOW_DRAWN, MF_BYCOMMAND);
         DeleteMenu(sm, ID_SHOW_FPS, MF_BYCOMMAND);
 
@@ -274,7 +287,8 @@ INT_PTR SWELLAppMain(int msg, INT_PTR parm1, INT_PTR parm2)
         while (a > 0 && GetMenuItemID(sm, a-1) == 0)
           DeleteMenu(sm, --a, MF_BYPOSITION);
 
-        DeleteMenu(menu, 1, MF_BYPOSITION); // delete debug menu
+        //DeleteMenu(menu, 1, MF_BYPOSITION); // delete debug menu
+        DeleteMenu(menu, 2, MF_BYPOSITION); // delete debug menu
       }
 #else
       SetMenuItemModifier(menu, ID_LIVE_EDIT, MF_BYCOMMAND, 'E', FCONTROL);
