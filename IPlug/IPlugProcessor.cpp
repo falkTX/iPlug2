@@ -531,7 +531,26 @@ void IPlugProcessor::PassThroughBuffers(PLUG_SAMPLE_SRC type, int nFrames)
 
 void IPlugProcessor::ProcessBuffers(PLUG_SAMPLE_DST type, int nFrames)
 {
-  ProcessBlock(mScratchData[ERoute::kInput].Get(), mScratchData[ERoute::kOutput].Get(), nFrames);
+  //ProcessBlock(mScratchData[ERoute::kInput].Get(), mScratchData[ERoute::kOutput].Get(), nFrames);
+  
+  // Make sure the last buffer is null (e.g when 1 input, and 2 outputs)
+  
+  // inputs
+  sample **inputs = new sample*[mScratchData[ERoute::kInput].GetSize() + 1];
+  for (int i = 0; i < mScratchData[ERoute::kInput].GetSize(); i++)
+    inputs[i] = mScratchData[ERoute::kInput].Get()[i];
+  inputs[mScratchData[ERoute::kInput].GetSize()] = NULL;
+         
+  // outputs
+  sample **outputs = new sample*[mScratchData[ERoute::kOutput].GetSize() + 1];
+  for (int i = 0; i < mScratchData[ERoute::kOutput].GetSize(); i++)
+    outputs[i] = mScratchData[ERoute::kOutput].Get()[i];
+  outputs[mScratchData[ERoute::kOutput].GetSize()] = NULL;
+  
+  ProcessBlock(inputs, outputs, nFrames);
+  
+  delete []inputs;
+  delete []outputs;
 }
 
 void IPlugProcessor::ProcessBuffers(PLUG_SAMPLE_SRC type, int nFrames)
