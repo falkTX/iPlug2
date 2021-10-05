@@ -515,15 +515,21 @@ WDL_DLGRET IPlugAPPHost::PreferencesDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wPar
           break;
 
         case IDC_BUTTON_OS_DEV_SETTINGS:
+        {
           if (HIWORD(wParam) == BN_CLICKED)
+          {
             #ifdef OS_WIN
             if( (_this->mState.mAudioDriverType == kDeviceASIO) && (_this->mDAC->isStreamRunning() == true)) // TODO: still not right
               ASIOControlPanel();
             #elif defined OS_MAC
-            system("open \"/Applications/Utilities/Audio MIDI Setup.app\"");
+            int res = system("open \"/Applications/Utilities/Audio MIDI Setup.app\"");
+            if (res != 0) // Since Catalina
+                res = system("open \"/System/Applications/Utilities/Audio MIDI Setup.app\"");
             #else
               #warning NOT IMPLEMENTED
             #endif
+          }
+        }
           break;
 
         case IDC_COMBO_MIDI_IN_DEV:
