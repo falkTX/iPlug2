@@ -188,6 +188,15 @@ public:
         pParam->SetNormalized(value);
         pPlug->OnParamChangeUI(tag, kHost);
         pPlug->SendParameterValueFromDelegate(tag, value, true);
+
+        // #bluelab
+        if (pPlug->GetUI() == NULL)
+            // No GUI, parameter may have been changed from host UI
+        {
+            // Call OnParmChange() here, because if plug UI is closed,
+            // OnParmChange() won't have been called with previous code
+            pPlug->OnParamChange(tag);
+        }
       }
     }
     
