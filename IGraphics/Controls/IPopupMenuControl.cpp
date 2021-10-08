@@ -204,7 +204,10 @@ void IPopupMenuControl::OnMouseDrag(float x, float y, float dX, float dY, const 
 
 void IPopupMenuControl::OnMouseOver(float x, float y, const IMouseMod& mod)
 {
-  mMouseCellBounds = mActiveMenuPanel->HitTestCells(x, y);
+  mMouseCellBounds = NULL;
+
+  if (mActiveMenuPanel != NULL)
+    mMouseCellBounds = mActiveMenuPanel->HitTestCells(x, y);
   
   // if the mouse event was outside of the active MenuPanel - could be on another menu or completely outside
   if(mMouseCellBounds == nullptr)
