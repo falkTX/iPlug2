@@ -316,16 +316,19 @@ void IPlugVST3ProcessorBase::ProcessParameterChanges(ProcessData& data, IPlugQue
 #ifdef PARAMS_MUTEX
                 mPlug.mParams_mutex.Enter();
 #endif
-                mPlug.GetParam(idx)->SetNormalized(value);
 
                 // #bluelab
 #if !BL_FIX_VST3_PARAM_CHANGE
+                mPlug.GetParam(idx)->SetNormalized(value);
+
                 // In VST3 non distributed the same parameter value is also set via IPlugVST3Controller::setParamNormalized(ParamID tag, ParamValue value)
                 mPlug.OnParamChange(idx, kHost, offsetSamples);
 #else
                 // Check that the parameter really changed
                 if (fabs(mPlug.GetParam(idx)->GetNormalized() - value) > 1e-30)
                 {
+                    mPlug.GetParam(idx)->SetNormalized(value);
+
                     // In VST3 non distributed the same parameter value is also set via IPlugVST3Controller::setParamNormalized(ParamID tag, ParamValue value)
                     mPlug.OnParamChange(idx, kHost, offsetSamples);
                 }
