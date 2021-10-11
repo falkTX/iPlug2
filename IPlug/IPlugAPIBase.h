@@ -187,6 +187,9 @@ public:
 
   void OnTimer(Timer& t);
 
+  // #bluelab
+  void SetTimerEnabled(bool flag);
+
 private:
   /** Implementations call into the APIs resize hooks
    * returns a bool to indicate whether the DAW or plugin class has resized the host window */
@@ -222,6 +225,9 @@ protected:
   IPlugQueue<SysExData> mSysExDataFromEditor {SYSEX_TRANSFER_SIZE}; // a queue of SYSEX data to send to the processor
   IPlugQueue<SysExData> mSysExDataFromProcessor {SYSEX_TRANSFER_SIZE}; // a queue of SYSEX data to send to the editor
   SysExData mSysexBuf;
+
+  // #bluelab
+  bool mTimerEnabled;
 };
 
 END_IPLUG_NAMESPACE

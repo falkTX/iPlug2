@@ -1656,7 +1656,7 @@ public:
   // #bluelab
   virtual IBitmap CreateBitmap(int w, int h, int bpp, unsigned char *data)
                     { IBitmap dummyBmp; return dummyBmp; };
-    
+
 protected:
   /** Drawing API method to load a bitmap, called internally
    * @param fileNameOrResID A CString absolute path or resource ID

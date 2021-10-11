@@ -20,6 +20,9 @@
 
 #include "IPlugAPIBase.h"
 
+// Ableton11, Win10: mutex deadlock when resizing GUI
+#define FIX_ABLETON11_WIN10_FREEZE 1
+
 using namespace iplug;
 
 IPlugAPIBase::IPlugAPIBase(Config c, EAPI plugAPI)
@@ -42,6 +45,8 @@ IPlugAPIBase::IPlugAPIBase(Config c, EAPI plugAPI)
   Trace(TRACELOC, "%s:%s", c.pluginName, CurrentTime());
   
   mParamDisplayStr.Set("", MAX_PARAM_DISPLAY_LEN);
+
+  mTimerEnabled = true;
 }
 
 IPlugAPIBase::~IPlugAPIBase()
@@ -144,8 +149,30 @@ void IPlugAPIBase::SendParameterValueFromAPI(int paramIdx, double value, bool no
   mParamChangeFromProcessor.Push(ParamTuple { paramIdx, value } );
 }
 
+// #bluelab
+void
+IPlugAPIBase::SetTimerEnabled(bool flag)
+{
+  // Using mutex here prevents from additional Ableton11/Win10/resize GUI crash
+  ENTER_PARAMS_MUTEX;
+
+  mTimerEnabled = flag;
+
+  LEAVE_PARAMS_MUTEX;
+}
+
 void IPlugAPIBase::OnTimer(Timer& t)
 {
+#if FIX_ABLETON11_WIN10_FREEZE
+#ifdef WIN32
+  if (!mTimerEnabled)
+    return;
+#endif
+#endif
+
+  // #bluelab
+  ENTER_PARAMS_MUTEX;
+
   if(HasUI())
   {
 // VST3 ********************************************************************************
@@ -176,15 +203,17 @@ void IPlugAPIBase::OnTimer(Timer& t)
     // #bluelab: added mutex. We change parameters from timer!
     // If at the same time parameter is changed from ProcessBlock(), this is bad
     // (Added for AutoGain)
-    ENTER_PARAMS_MUTEX;
+    //ENTER_PARAMS_MUTEX;
+
     while(mParamChangeFromProcessor.ElementsAvailable())
     {
       ParamTuple p;
       mParamChangeFromProcessor.Pop(p);
       SendParameterValueFromDelegate(p.idx, p.value, false);
     }
-    LEAVE_PARAMS_MUTEX;
-    
+
+    //LEAVE_PARAMS_MUTEX;
+
     while (mMidiMsgsFromProcessor.ElementsAvailable())
     {
       IMidiMsg msg;
@@ -205,6 +234,8 @@ void IPlugAPIBase::OnTimer(Timer& t)
 #if !(defined(OS_LINUX) && defined(VST2_API))
   OnIdle();
 #endif
+
+  LEAVE_PARAMS_MUTEX;
 }
 
 void IPlugAPIBase::SendMidiMsgFromUI(const IMidiMsg& msg)
