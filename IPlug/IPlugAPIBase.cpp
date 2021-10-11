@@ -20,8 +20,12 @@
 
 #include "IPlugAPIBase.h"
 
-// Ableton11, Win10: mutex deadlock when resizing GUI
+// Ableton11, Win10, VST2: mutex deadlock when resizing GUI from host UI
+#if (defined WIN32) && (defined VST2_API)
 #define FIX_ABLETON11_WIN10_FREEZE 1
+#else
+#define FIX_ABLETON11_WIN10_FREEZE 0
+#endif
 
 using namespace iplug;
 
@@ -163,16 +167,16 @@ IPlugAPIBase::SetTimerEnabled(bool flag)
 
 void IPlugAPIBase::OnTimer(Timer& t)
 {
+    // #bluelab
 #if FIX_ABLETON11_WIN10_FREEZE
-#ifdef WIN32
   if (!mTimerEnabled)
     return;
 #endif
-#endif
 
-  // #bluelab
+#if FIX_ABLETON11_WIN10_FREEZE
   ENTER_PARAMS_MUTEX;
-
+#endif
+  
   if(HasUI())
   {
 // VST3 ********************************************************************************
@@ -203,8 +207,10 @@ void IPlugAPIBase::OnTimer(Timer& t)
     // #bluelab: added mutex. We change parameters from timer!
     // If at the same time parameter is changed from ProcessBlock(), this is bad
     // (Added for AutoGain)
-    //ENTER_PARAMS_MUTEX;
-
+#if !FIX_ABLETON11_WIN10_FREEZE
+    ENTER_PARAMS_MUTEX;
+#endif
+    
     while(mParamChangeFromProcessor.ElementsAvailable())
     {
       ParamTuple p;
@@ -212,8 +218,10 @@ void IPlugAPIBase::OnTimer(Timer& t)
       SendParameterValueFromDelegate(p.idx, p.value, false);
     }
 
-    //LEAVE_PARAMS_MUTEX;
-
+#if !FIX_ABLETON11_WIN10_FREEZE
+    LEAVE_PARAMS_MUTEX;
+#endif
+    
     while (mMidiMsgsFromProcessor.ElementsAvailable())
     {
       IMidiMsg msg;
@@ -235,7 +243,9 @@ void IPlugAPIBase::OnTimer(Timer& t)
   OnIdle();
 #endif
 
+#if FIX_ABLETON11_WIN10_FREEZE
   LEAVE_PARAMS_MUTEX;
+#endif
 }
 
 void IPlugAPIBase::SendMidiMsgFromUI(const IMidiMsg& msg)
