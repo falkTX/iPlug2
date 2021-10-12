@@ -94,7 +94,10 @@ public:
 
   // #bluelab
   void ResetLastEditorSize();
-    
+
+  // Will be implemented in IPlugAPIBase
+  virtual void SetIsUIResizing(bool flag) {}
+
 protected:  
   std::function<IGraphics*()> mMakeGraphicsFunc = nullptr;
   std::function<void(IGraphics* pGraphics)> mLayoutFunc = nullptr;
