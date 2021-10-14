@@ -96,7 +96,7 @@ public:
   void ResetLastEditorSize();
 
   // Will be implemented in IPlugAPIBase
-  virtual void SetIsUIResizing(bool flag) {}
+  virtual void SetTimerDisabled(bool flag) {}
 
 protected:  
   std::function<IGraphics*()> mMakeGraphicsFunc = nullptr;

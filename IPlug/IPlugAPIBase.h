@@ -188,7 +188,7 @@ public:
   void OnTimer(Timer& t);
 
   // #bluelab
-  void SetIsUIResizing(bool flag) override;
+  void SetTimerDisabled(bool flag) override;
 
 private:
   /** Implementations call into the APIs resize hooks
@@ -227,7 +227,7 @@ protected:
   SysExData mSysexBuf;
 
   // #bluelab
-  bool mIsUIResizing;
+  bool mIsTimerDisabled;
 };
 
 END_IPLUG_NAMESPACE

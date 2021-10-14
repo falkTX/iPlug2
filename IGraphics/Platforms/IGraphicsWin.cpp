@@ -883,7 +883,7 @@ void IGraphicsWin::PlatformResize(bool parentHasResized)
   if (WindowIsOpen())
   {
     // #bluelab
-    GetDelegate()->SetIsUIResizing(true);
+    GetDelegate()->SetTimerDisabled(true);
 
     HWND pParent = 0, pGrandparent = 0;
     int dlgW = 0, dlgH = 0, parentW = 0, parentH = 0, grandparentW = 0, grandparentH = 0;
@@ -1172,7 +1172,7 @@ void* IGraphicsWin::OpenWindow(void* pParent)
   // #bluelab
   // The following line may be better to be put at the bottom of this method,
   // but it has been tested a lot since now at this position, and it looks ok.
-  GetDelegate()->SetIsUIResizing(false);
+  GetDelegate()->SetTimerDisabled(false);
 
   if (MultiTouchEnabled() && GetSystemMetrics(SM_DIGITIZER) & NID_MULTI_INPUT)
   {
@@ -1603,6 +1603,9 @@ void IGraphicsWin::PromptForFile(WDL_String& fileName, WDL_String& path, EFileAc
     return;
   }
 
+  // #bluelab
+  GetDelegate()->SetTimerDisabled(true);
+
   wchar_t fnCStr[_MAX_PATH];
   wchar_t dirCStr[_MAX_PATH];
     
@@ -1702,6 +1705,9 @@ void IGraphicsWin::PromptForFile(WDL_String& fileName, WDL_String& path, EFileAc
   }
 
   ReleaseMouseCapture();
+
+  // #bluelab
+  GetDelegate()->SetTimerDisabled(false);
 }
 
 void IGraphicsWin::PromptForDirectory(WDL_String& dir)

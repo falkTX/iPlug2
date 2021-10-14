@@ -51,7 +51,7 @@ IPlugAPIBase::IPlugAPIBase(Config c, EAPI plugAPI)
   mParamDisplayStr.Set("", MAX_PARAM_DISPLAY_LEN);
 
   // #bluelab
-  mIsUIResizing = false;
+  mIsTimerDisabled = false;
 }
 
 IPlugAPIBase::~IPlugAPIBase()
@@ -156,12 +156,12 @@ void IPlugAPIBase::SendParameterValueFromAPI(int paramIdx, double value, bool no
 
 // #bluelab
 void
-IPlugAPIBase::SetIsUIResizing(bool flag)
+IPlugAPIBase::SetTimerDisabled(bool flag)
 {
   // Using mutex here prevents from additional Ableton11/Win10/resize GUI crash
   ENTER_PARAMS_MUTEX;
 
-  mIsUIResizing = flag;
+  mIsTimerDisabled = flag;
 
   LEAVE_PARAMS_MUTEX;
 }
@@ -172,7 +172,7 @@ void IPlugAPIBase::OnTimer(Timer& t)
 #if FIX_ABLETON11_WIN10_FREEZE
   // On Ableton11/Win10/VST2, we would have mutex dead locks if resizing GUI
   // from host UI, if ever we continue to process OnTimer() while resizing
-  if (mIsUIResizing)
+  if (mIsTimerDisabled)
     return;
 #endif
 
