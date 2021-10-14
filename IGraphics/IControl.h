@@ -417,7 +417,15 @@ public:
   virtual void OnGUIIdle() {}
   
   /** Get the control's tag. @see Control Tags */
-  int GetTag() const { return GetUI()->GetControlTag(this); }
+  //int GetTag() const { return GetUI()->GetControlTag(this); }
+  // #bluelab
+  int GetTag() const
+  {
+    if (GetUI() == NULL)
+      return kNoTag;
+    
+    return GetUI()->GetControlTag(this);
+  }
   
   /** Specify whether this control wants to know about MIDI messages sent to the UI. See OnMIDIMsg() */
   void SetWantsMidi(bool enable = true) { mWantsMidi = enable; }
