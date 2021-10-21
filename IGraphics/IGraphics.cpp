@@ -1241,14 +1241,14 @@ bool IGraphics::OnMouseOver(float x, float y, const IMouseMod& mod)
   //if (pControl != mCurrentTooltipControl)
   if (mIsTooltipActive)
   {
-      if(mTooltipControl)
-        mTooltipControl->SetControl(nullptr);
+    if(mTooltipControl)
+      mTooltipControl->SetControl(nullptr);
 
-      // Refresh all controls after tooltip close
-      // Hard way, should refresh only the controls under the closed tooltip instead
-      SetAllControlsDirty();
-
-      mIsTooltipActive = false;
+    // Refresh all controls after tooltip close
+    // Hard way, should refresh only the controls under the closed tooltip instead
+    SetAllControlsDirty();
+    
+    mIsTooltipActive = false;
   }
   
   // For making a tooltip appear, move the mouse on a control, and wait
@@ -3128,7 +3128,8 @@ IGraphics::CheckTooltipsDelay()
 {
   const double timestamp = GetTimestamp();
 
-  if (mCurrentTooltipControl == NULL)
+  if ((mCurrentTooltipControl == NULL) || // We are not over a suitable control
+      mIsTooltipActive) // Already have a tooltip, don't create new ones undefinitely
   {
     mPrevTooltipsTimestamp = timestamp;
     return;
@@ -3139,12 +3140,12 @@ IGraphics::CheckTooltipsDelay()
   {
     if(mTooltipControl)
     {
-        mTooltipControl->SetControl(mCurrentTooltipControl);
+      mTooltipControl->SetControl(mCurrentTooltipControl);
 
-        // #bluelab
-        mTooltipControl->SetCursorPos(mCurrentTooltipControl, mCursorX, mCursorY);
+      // #bluelab
+      mTooltipControl->SetCursorPos(mCurrentTooltipControl, mCursorX, mCursorY);
 
-        mIsTooltipActive = true;
+      mIsTooltipActive = true;
     }
   }
 }
