@@ -1422,15 +1422,6 @@ bool IGraphics::OnKeyDown(float x, float y, const IKeyPress& key)
   }
 #endif
 
-  // #bluelab
-  IGEditorDelegate * delegate = GetDelegate();
-  if (delegate != NULL)
-  {
-    handled = delegate->OnKeyDown(key);
-    if (handled)
-      return true;
-  }
-      
   IControl* pControl = GetMouseControl(x, y, false);
   
   if (pControl && pControl != GetControl(0))

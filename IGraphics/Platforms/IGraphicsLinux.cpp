@@ -467,7 +467,15 @@ void IGraphicsLinux::WindowHandler(xcb_generic_event_t* evt)
                   key.VK, key.utf8, key.S, key.A, key.C);
 #endif
 
-          OnKeyDown(x, y, key);
+          // #bluelab
+          bool handled = false;
+          IGEditorDelegate * delegate = GetDelegate();
+          if (delegate != NULL)
+              // Plugin
+              handled = delegate->OnKeyDown(key);
+
+          if (!handled)
+              OnKeyDown(x, y, key);
       }
       break;
       case XCB_KEY_RELEASE:
