@@ -23,6 +23,8 @@ misrepresented as being the original software.
 #ifndef _WDLUTF8_H_
 #define _WDLUTF8_H_
 
+#include <stdlib.h>
+
 /* todo: handle overlongs?
  * todo: handle multi-byte (make WideStr support UTF-16)
  */
