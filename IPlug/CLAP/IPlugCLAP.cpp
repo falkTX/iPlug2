@@ -99,6 +99,7 @@ bool IPlugCLAP::EditorResize(int viewWidth, int viewHeight)
 void IPlugCLAP::SetTailSize(int samples)
 {
   IPlugProcessor::SetTailSize(samples);
+  
   if (GetClapHost().canUseTail())
     mTailUpdate = true;
 }
@@ -106,6 +107,21 @@ void IPlugCLAP::SetTailSize(int samples)
 void IPlugCLAP::SetLatency(int samples)
 {
   IPlugProcessor::SetLatency(samples);
+  
+  if (GetClapHost().canUseLatency())
+  {
+    // If active request restart on the main thread (or update the host)
+  
+    if (isActive())
+    {
+      mLatencyUpdate = true;
+      runOnMainThread([&](){ GetClapHost().requestRestart(); });
+    }
+    else
+    {
+      GetClapHost().latencyChanged();
+    }
+  }
 }
 
 bool IPlugCLAP::SendMidiMsg(const IMidiMsg& msg)
@@ -144,7 +160,15 @@ void IPlugCLAP::deactivate() noexcept
 {
   OnActivate(false);
   
-  // TODO - should we clear mTailChanged here or elsewhere?
+  // TODO - check that this is correct
+  
+  if (mLatencyUpdate)
+  {
+    GetClapHost().latencyChanged();
+    mLatencyUpdate = false;
+  }
+
+  // TODO - should we clear mTailUpdate here or elsewhere?
 }
 
 template <typename T>
