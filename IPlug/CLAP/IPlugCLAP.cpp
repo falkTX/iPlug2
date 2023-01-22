@@ -936,7 +936,7 @@ void IPlugCLAP::SetDefaultConfig()
     clap_track_info info;
     GetClapHost().trackInfoGet(&info);
 
-    if (testMatches(info.channel_count) || info.channel_count == 2)
+    if (testMatches(info.audio_channel_count) || info.audio_channel_count == 2)
       return;
   }
   
