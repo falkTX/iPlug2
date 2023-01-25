@@ -1,0 +1,3 @@
+[submodule "iPlug2/Dependencies/IPlug/WAM_AWP"]
+	path = iPlug2/Dependencies/IPlug/WAM_AWP
+	url = https://github.com/iPlug2/audioworklet-polyfill.git
